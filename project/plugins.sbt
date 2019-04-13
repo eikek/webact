@@ -1,0 +1,8 @@
+addSbtPlugin("io.get-coursier" % "sbt-coursier" % "1.1.0-M4")
+addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.8.0")
+addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.9.3")
+addSbtPlugin("io.spray" % "sbt-revolver" % "0.9.1")
+addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.3.6")
+addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.2")
+addSbtPlugin("com.47deg" % "sbt-microsites" % "0.7.23")
+addSbtPlugin("com.github.eikek" % "sbt-openapi-schema" % "0.1.0")

@@ -1,0 +1,264 @@
+openapi: 3.0.0
+
+info:
+  title: Webact
+  version: 0.0.1
+
+servers:
+  - url: /api/v1
+    description: Current host
+
+paths:
+  /scripts:
+    get:
+      summary: Get all scripts.
+      description: |
+        Return a list of all available scripts.
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScriptDetail"
+
+  /scripts/{script}:
+    parameters:
+      - name: script
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      summary: Upload a script file.
+      description: |
+        Add a script file. If the file already exists on the server,
+        it is overwritten.
+
+        If the directory is controlled by git, a new commit is created
+        containing the change. You may use the POST variant with a
+        multipart/form request to specify a commit message.
+      requestBody:
+        content:
+          any:
+            schema:
+              type: string
+              format: binary
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScriptDetail"
+
+    post:
+      summary: Upload a script file.
+      description: |
+        Add a script file. If the file already exists on the server,
+        it is overwritten.
+
+        If the directory is controlled by git, a new commit is
+        created. A commit message may be specified in the request.
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - script
+              properties:
+                commitMsg:
+                  type: string
+                script:
+                  type: string
+                  format: binary
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScriptDetail"
+    get:
+      summary: Get a script meta data
+      description: |
+        Return a JSON structure containing the scripts meta data.
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScriptDetail"
+
+  /scripts/{script}/run:
+    parameters:
+      - name: script
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Run a script asynchronously.
+      description: |
+        The script is executed on the server. There is one argument
+        passed to the script: a file containing current request
+        information.
+
+        So all query parameters are valid for this route.
+      responses:
+        '200':
+          description: Ok
+    post:
+      summary: Run a script.
+      description: |
+        The script is executed on the server asynchronously. The
+        request body is passed as argument to the script as well as
+        the information about the current request.
+
+        If this is a multipart request, each part is passed as one
+        argument to the script.
+      responses:
+        '200':
+          description: Ok
+
+  /scripts/{script}/content:
+    parameters:
+      - name: script
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get the scripts' content.
+      description: |
+        Return the script file as is.
+      responses:
+        '200':
+          description: Ok
+          content:
+            text/plain:
+              type: string
+        '404':
+          description: Not found
+
+  /scripts/{script}/output:
+    parameters:
+      - name: script
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get output of a script run.
+      description: |
+        Get the details about the last run of this script.
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScriptOutput"
+        '404':
+          description: Not found
+
+  /scripts/{script}/output/stdout:
+    parameters:
+      - name: script
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get the stdout output of the last script run
+      description: |
+        Return the complete stdout output of the script last run.
+      responses:
+        '200':
+          description: Ok
+          content:
+            text/plain:
+              schema:
+                type: string
+  /scripts/{script}/output/stderr:
+    parameters:
+      - name: script
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get the stderr output of the last script run
+      description: |
+        Return the complete stderr output of the script last run.
+      responses:
+        '200':
+          description: Ok
+          content:
+            text/plain:
+              schema:
+                type: string
+
+
+components:
+  schemas:
+    ScriptOutput:
+      description: |
+        Details about a script run.
+      required:
+        - date
+        - returnCode
+        - runningTime
+        - runCount
+        - runSuccess
+      properties:
+        date:
+          type: string
+          format: datetime
+        returnCode:
+          type: integer
+          format: int32
+        runningTime:
+          type: integer
+          format: int64
+        runCount:
+          type: integer
+          format: int32
+        runSuccess:
+          type: integer
+          format: int32
+
+    ScriptDetail:
+      description: |
+        A scripts meta data.
+      required:
+        - name
+        - category
+        - lastModified
+        - description
+        - schedule
+        - enabled
+        - notifyMail
+        - notifyErrorMail
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+        lastModified:
+          type: integer
+          format: int64
+        description:
+          type: string
+        schedule:
+          type: string
+        enabled:
+          type: boolean
+        notifyMail:
+          type: string
+        notifyErrorMail:
+          type: string
