@@ -9,12 +9,12 @@ import scala.collection.JavaConverters._
 import java.nio.file.{Files, Path}
 import java.nio.file.StandardOpenOption._
 import java.nio.file.attribute.{PosixFilePermission => Perm}
-import java.util.stream.Collectors
 import java.util.concurrent._
 import java.time._
 import org.slf4j._
 
 import webact.config._
+import File._
 
 final class ScriptAppImpl[F[_]: Concurrent](cfg: Config, blockingEc: ExecutionContext)
   (implicit C: ContextShift[F], T: Timer[F]) extends ScriptApp[F] {
@@ -31,8 +31,7 @@ final class ScriptAppImpl[F[_]: Concurrent](cfg: Config, blockingEc: ExecutionCo
     new ConcurrentHashMap[String, F[Unit]]()
 
   def listAll: Stream[F, Script[F]] =
-    Stream.bracket(Sync[F].delay(Files.list(cfg.scriptDir)))(s => Sync[F].delay(s.close)).
-      flatMap(s => Stream.emits(s.collect(Collectors.toList()).asScala)).
+    cfg.scriptDir.listFiles.
       filter(f => !Files.isDirectory(f)).
       evalMap(f => Script.fromFile(f, blockingEc))
 

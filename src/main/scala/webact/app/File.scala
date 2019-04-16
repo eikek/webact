@@ -1,10 +1,12 @@
 package webact.app
 
+import fs2.Stream
 import cats.effect._
 import java.nio.file.{Files, Path}
 import java.nio.file.StandardOpenOption._
 import java.nio.file.StandardCopyOption._
 import java.nio.charset.StandardCharsets
+import scala.collection.JavaConverters._
 import io.circe._
 import io.circe.syntax._
 
@@ -62,6 +64,14 @@ object File {
 
     def delete[F[_]: Sync]: F[Boolean] =
       Sync[F].delay(Files.deleteIfExists(p))
+
+    def listFiles[F[_]: Sync]: Stream[F, Path] =
+      if (exists) {
+        Stream.bracket(Sync[F].delay(Files.list(p)))(s => Sync[F].delay(s.close)).
+          flatMap(s => Stream.fromIterator(s.iterator.asScala))
+      } else {
+        Stream.empty
+      }
   }
 
 }

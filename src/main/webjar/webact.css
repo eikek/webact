@@ -1,0 +1,10 @@
+/* Webact CSS */
+
+body {
+    background: #fff;
+}
+
+.default-layout .main-content {
+    margin-top: 50px;
+    padding-top: 15px;
+}

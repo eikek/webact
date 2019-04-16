@@ -43,6 +43,16 @@ object Dependencies {
     "dnsjava" % "dnsjava" % dnsJavaVersion intransitive()
   )
 
+  val yamusca = Seq(
+    "com.github.eikek" %% "yamusca-core" % "0.5.1"
+  )
+
+  val webjars = Seq(
+    "swagger-ui" -> "3.22.0",
+    "Semantic-UI" -> "2.4.1",
+    "jquery" -> "3.4.0"
+  ).map({case (a, v) => "org.webjars" % a % v })
+
   val testing = Seq(
     // https://github.com/monix/minitest
     // Apache 2.0

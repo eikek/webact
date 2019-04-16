@@ -1,0 +1,26 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="mobile-web-app-capable" content="yes">
+
+        <title>{{ flags.appName }}</title>
+        {{# cssUrls }}
+        <link rel="stylesheet" href="{{.}}"/>
+        {{/ cssUrls }}
+        {{# jsUrls }}
+        <script type="application/javascript" src="{{.}}"></script>
+        {{/ jsUrls}}
+
+    </head>
+
+    <body>
+        <div id="webact-app">
+        </div>
+
+        <script type="application/javascript">
+         var elmFlags = {{{flagsJson}}};
+        </script>
+        <script type="application/javascript" src="{{appExtraJs}}"></script>
+    </body>
+
+</html>
