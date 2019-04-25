@@ -14,6 +14,7 @@ import io.circe.syntax._
 import io.circe.parser._
 
 import webact.config._
+import File._
 
 object OS {
   private[this] val logger = LoggerFactory.getLogger(getClass)
@@ -21,7 +22,7 @@ object OS {
   val pathSep = java.io.File.pathSeparator
 
   def execute(script: Path, args: Seq[Path], cfg: Config): Option[Output] = {
-    val meta = readMeta(script).updated(Key.Name, script.getFileName.toString)
+    val meta = readMeta(script).set(Key.Name, script.getFileName.toString)
     if (meta.get(Key.Enabled).exists(_.equalsIgnoreCase("true"))) {
       val tmpDir = Files.createDirectories(cfg.tmpDir.resolve(script.getFileName))
       val out = tmpDir.resolve("stdout.txt").toAbsolutePath.normalize
@@ -47,7 +48,7 @@ object OS {
       val procLogger = new ProcLogger(out, err)
       val output = Try(proc ! procLogger) match {
         case Success(rc) =>
-          val successCodes = meta.get(Key.SuccessCodes).getOrElse("").split(',').
+          val successCodes = meta.get(Key.SuccessCode).
             map(_.trim).filter(_.nonEmpty).
             flatMap(s => Try(s.toInt).toOption).
             toSet
@@ -82,28 +83,42 @@ object OS {
   }
 
   def findOutput(name: String, cfg: Config): Option[Output] = {
-    val tmpDir = Files.createDirectories(cfg.tmpDir.resolve(name))
-    val meta = tmpDir.resolve("run.json")
-    readRunjson(meta)
+    val meta = cfg.tmpDir/name/"run.json"
+    if (meta.exists) readRunjson(meta)
+    else None
   }
 
-  private def runHooks(meta: Map[Key, String], output: Output, cfg: Config): Unit = {
-    val name = meta.get(Key.Name).getOrElse("<unknown>")
+  private def runHooks(meta: MetaHeader, output: Output, cfg: Config): Unit = {
+    def read(f: Path): String =
+      new String(Files.readAllBytes(f), File.defaultCharset)
+
+    val name = meta.getHead(Key.Name).getOrElse("<unknown>")
     val recipients =
-      (meta.get(Key.NotifyErrorMail).filter(_ => output.failure) |+|
-        Some(",") |+|
+      (meta.get(Key.NotifyErrorMail).filter(_ => output.failure) ++
         meta.get(Key.NotifyMail)).
-        map(s => s.split(',').map(_.trim).filter(_.nonEmpty).toSeq).
-        getOrElse(Seq.empty).
+        map(_.trim).filter(_.nonEmpty).
         map(s => MailSender.Mail(s))
-    logger.debug(s"Got $recipients recipients to notify ($meta)")
+    logger.debug(s"Got $recipients recipients to notify.")
 
     if (recipients.nonEmpty) {
+      val subject = meta.getHeadOr(Key.NotifySubject, s"[${cfg.appName}] Run ${name}") match {
+        case s => s +  (if (output.failure) ": FAILED" else "")
+      }
+      val text = {
+        if (output.success) read(output.stdout)
+        else {
+          "--- stdout ---\n\n" +
+          read(output.stdout) +
+          "\n\n--- stderr ---\n\n" +
+          read(output.stderr)
+        }
+      }
       val msg = MailSender.Message(
         recipients,
         MailSender.Mail(cfg.smtp.sender),
-        s"[${cfg.appName}] Run ${name}: ${if (output.failure) "FAILED" else "Success"}",
-        s"""The script '$name' was just run"""
+        subject,
+        text,
+        Some(cfg.appName)
       )
       MailSender.SmtpClient(cfg.smtp).send(msg) match {
         case Validated.Invalid(err) =>
@@ -114,11 +129,11 @@ object OS {
     }
   }
 
-  private def readMeta(script: Path): Map[Key, String] =
+  private def readMeta(script: Path): MetaHeader =
     if (Files.exists(script)) {
       MetaParser.parseMeta(new String(Files.readAllBytes(script)))
     } else {
-      Map(Key.Enabled -> "false")
+      MetaHeader(Key.Enabled -> "false")
     }
 
   private def readRunjson(file: Path): Option[Output] =
@@ -150,7 +165,8 @@ object OS {
     }
     def out(s: => String): Unit = {
       Files.write(outFile, (s + "\n").getBytes, CREATE, WRITE, APPEND)
-      logger.debug(s)
+      ()
+      //logger.debug(s)
     }
   }
 }

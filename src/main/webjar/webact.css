@@ -4,7 +4,29 @@ body {
     background: #fff;
 }
 
+.invisible {
+    display: none !important;
+}
+
 .default-layout .main-content {
     margin-top: 50px;
     padding-top: 15px;
+}
+
+.default-layout .script-description {
+    margin: 1em;
+    font-size: larger;
+    max-width: 800px;
+}
+
+.default-layout .script-output {
+    background: #333;
+    color: #fff;
+    font-size: smaller;
+    overflow: auto;
+    padding: 0.5em;
+}
+
+.default-layout textarea.script-edit {
+    font-family: monospace,monospace;
 }

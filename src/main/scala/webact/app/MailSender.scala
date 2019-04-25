@@ -21,7 +21,7 @@ object MailSender {
     }
   }
 
-  case class Message(recipients: Seq[Mail], sender: Mail, subject: String, text: String)
+  case class Message(recipients: Seq[Mail], sender: Mail, subject: String, text: String, listId: Option[String])
 
 
   final class SmtpClient(settings: Config.Smtp) {
@@ -47,11 +47,11 @@ object MailSender {
           for (to <- recipients) {
             msg.addRecipient(javax.mail.Message.RecipientType.TO, new InternetAddress(to.address))
           }
+          m.listId.foreach(id => msg.setHeader("List-Id", "<"+id+">"))
           msg.setSubject(m.subject)
           msg.setText(m.text)
           Transport.send(msg)
-          logger.debug("sent mail to "+ recipients)
-          ()
+          logger.debug("sent mail to {}", recipients)
         }
       }
     }

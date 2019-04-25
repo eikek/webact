@@ -30,10 +30,66 @@ val testSettings = Seq(
   libraryDependencies ++= Dependencies.testing
 )
 
+val elmSettings = Seq(
+  Compile/resourceGenerators += (Def.task {
+    compileElm(streams.value.log
+      , (Compile/baseDirectory).value
+      , (Compile/resourceManaged).value
+      , name.value
+      , version.value)
+  }).taskValue,
+  watchSources += Watched.WatchSource(
+    (Compile/sourceDirectory).value/"elm"
+      , FileFilter.globFilter("*.elm")
+      , HiddenFileFilter
+  )
+)
+
+val webjarSettings = Seq(
+  Compile/resourceGenerators += (Def.task {
+    copyWebjarResources(Seq((sourceDirectory in Compile).value/"webjar", (Compile/resourceDirectory).value/"openapi.yml")
+      , (Compile/resourceManaged).value
+      , name.value
+      , version.value
+      , streams.value.log
+    )
+  }).taskValue,
+  Compile/sourceGenerators += (Def.task {
+    createWebjarSource(Dependencies.webjars, (Compile/sourceManaged).value)
+  }).taskValue,
+  Compile/unmanagedResourceDirectories ++= Seq((Compile/resourceDirectory).value.getParentFile/"templates"),
+  watchSources += Watched.WatchSource(
+    (Compile / sourceDirectory).value/"webjar"
+      , FileFilter.globFilter("*.js") || FileFilter.globFilter("*.css")
+      , HiddenFileFilter
+  )
+)
+
+val debianSettings = Seq(
+  maintainer := "Eike Kettner <eike.kettner@posteo.de>",
+  packageSummary := description.value,
+  packageDescription := description.value,
+  mappings in Universal += {
+    val conf = (Compile / resourceDirectory).value / "reference.conf"
+    if (!conf.exists) {
+      sys.error(s"File $conf not found")
+    }
+    conf -> "conf/webact.conf"
+  },
+  bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/webact.conf""""
+)
+
 lazy val root = (project in file(".")).
-  enablePlugins(OpenApiSchema, BuildInfoPlugin).
+  enablePlugins(OpenApiSchema
+    , BuildInfoPlugin
+    , JavaServerAppPackaging
+    , DebianPlugin
+    , SystemdPlugin).
   settings(sharedSettings).
   settings(testSettings).
+  settings(elmSettings).
+  settings(webjarSettings).
+  settings(debianSettings).
   settings(
     name := "webact",
     description := "Execute and manage scripts from the web",
@@ -46,26 +102,7 @@ lazy val root = (project in file(".")).
       Dependencies.logging ++
       Dependencies.yamusca ++
       Dependencies.webjars,
-    javaOptions in reStart := (javaOptions in run).value  ++ Seq("-Dwebact.script-dir=target/scripts"),
-    Compile/resourceGenerators += (Def.task {
-      copyWebjarResources(Seq((sourceDirectory in Compile).value/"webjar", (Compile/resourceDirectory).value/"openapi.yml")
-        , (Compile/resourceManaged).value
-        , name.value
-        , version.value
-        , streams.value.log
-      )
-    }).taskValue,
-    Compile/resourceGenerators += (Def.task {
-      compileElm(streams.value.log
-        , (Compile/baseDirectory).value
-        , (Compile/resourceManaged).value
-        , name.value
-        , version.value)
-    }).taskValue,
-    Compile/unmanagedResourceDirectories ++= Seq((Compile/resourceDirectory).value.getParentFile/"templates"),
-    Compile/sourceGenerators += (Def.task {
-      createWebjarSource(Dependencies.webjars, (Compile/sourceManaged).value)
-    }).taskValue,
+    javaOptions in reStart := (javaOptions in run).value  ++ Seq("-Dwebact.script-dir=target/scripts", s"-Dconfig.file=${baseDirectory.value/"dev.conf"}"),
     addCompilerPlugin(Dependencies.kindProjectorPlugin),
     addCompilerPlugin(Dependencies.betterMonadicFor),
     openapiTargetLanguage := Language.Scala,
@@ -103,7 +140,7 @@ def copyWebjarResources(src: Seq[File], base: File, artifact: String, version: S
 def compileElm(logger: Logger, wd: File, outBase: File, artifact: String, version: String): Seq[File] = {
   logger.info("Compile elm files ...")
   val target = outBase/"META-INF"/"resources"/"webjars"/artifact/version/"webact-app.js"
-  val proc = Process(Seq("elm", "make", "--optimize", "--output", target.toString) ++ Seq(wd/"src"/"main"/"elm"/"Main.elm").map(_.toString), Some(wd))
+  val proc = Process(Seq("elm", "make", "--output", target.toString) ++ Seq(wd/"src"/"main"/"elm"/"Main.elm").map(_.toString), Some(wd))
   val out = proc.!!
   logger.info(out)
   Seq(target)

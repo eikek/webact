@@ -50,7 +50,8 @@ object Dependencies {
   val webjars = Seq(
     "swagger-ui" -> "3.22.0",
     "Semantic-UI" -> "2.4.1",
-    "jquery" -> "3.4.0"
+    "jquery" -> "3.4.0",
+    "highlightjs" -> "9.8.0"
   ).map({case (a, v) => "org.webjars" % a % v })
 
   val testing = Seq(

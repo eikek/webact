@@ -22,7 +22,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/ScriptDetail"
+                  $ref: "#/components/schemas/ScriptInfo"
 
   /scripts/{script}:
     parameters:
@@ -92,7 +92,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ScriptDetail"
+                $ref: "#/components/schemas/ScriptInfo"
 
   /scripts/{script}/run:
     parameters:
@@ -101,17 +101,6 @@ paths:
         required: true
         schema:
           type: string
-    get:
-      summary: Run a script asynchronously.
-      description: |
-        The script is executed on the server. There is one argument
-        passed to the script: a file containing current request
-        information.
-
-        So all query parameters are valid for this route.
-      responses:
-        '200':
-          description: Ok
     post:
       summary: Run a script.
       description: |
@@ -119,11 +108,82 @@ paths:
         request body is passed as argument to the script as well as
         the information about the current request.
 
-        If this is a multipart request, each part is passed as one
-        argument to the script.
+        If this is a multipart request, each part is passed as
+        separate argument to the script.
       responses:
         '200':
           description: Ok
+
+  /scripts/{script}/runsync:
+    parameters:
+      - name: script
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Run a script synchronously.
+      description: |
+        The script is executed on the server and the stdout is sent as
+        response. The request body is passed as argument to the script
+        as well as the information about the current request.
+
+        If this is a multipart request, each part is passed as
+        separate argument to the script.
+
+        Which data (stdout or stderr) is sent depends on the scripts
+        meta data and its return code.
+
+        A 404 response is returned, if the script is not found or if
+        it is disabled.
+      responses:
+        '200':
+          description: Ok
+        '404':
+          description: NotFound
+        '400':
+          description: BadRequest
+        '500':
+          description: Internal Server Error
+    get:
+      summary: Run a script synchronously.
+      description: |
+        The script is executed on the server and its output is sent as
+        response. The request is passed as argument to the script.
+
+        Which data (stdout or stderr) is sent depends on the scripts
+        meta data and its return code.
+
+        A 404 response is returned, if the script is not found or if
+        it is disabled.
+      responses:
+        '200':
+          description: Ok
+        '404':
+          description: NotFound
+        '400':
+          description: BadRequest
+        '500':
+          description: Internal Server Error
+
+  /scripts/{script}/running:
+    parameters:
+      - name: script
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get information about current running state.
+      description: |
+        Return short information about current run state of a script.
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunningInfo"
 
   /scripts/{script}/content:
     parameters:
@@ -141,30 +201,11 @@ paths:
           description: Ok
           content:
             text/plain:
-              type: string
+              schema:
+                type: string
         '404':
           description: Not found
 
-  /scripts/{script}/output:
-    parameters:
-      - name: script
-        in: path
-        required: true
-        schema:
-          type: string
-    get:
-      summary: Get output of a script run.
-      description: |
-        Get the details about the last run of this script.
-      responses:
-        '200':
-          description: Ok
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ScriptOutput"
-        '404':
-          description: Not found
 
   /scripts/{script}/output/stdout:
     parameters:
@@ -206,12 +247,24 @@ paths:
 
 components:
   schemas:
+    ScriptInfo:
+      description: |
+        All information about a script and its last run.
+      required:
+        - script
+      properties:
+        script:
+          $ref: "#/components/schemas/ScriptDetail"
+        output:
+          $ref: "#/components/schemas/ScriptOutput"
+
     ScriptOutput:
       description: |
         Details about a script run.
       required:
         - date
         - returnCode
+        - success
         - runningTime
         - runCount
         - runSuccess
@@ -222,6 +275,8 @@ components:
         returnCode:
           type: integer
           format: int32
+        success:
+          type: boolean
         runningTime:
           type: integer
           format: int64
@@ -241,14 +296,19 @@ components:
         - lastModified
         - description
         - schedule
+        - scheduledAt
+        - executing
         - enabled
         - notifyMail
         - notifyErrorMail
+        - params
       properties:
         name:
           type: string
         category:
-          type: string
+          type: array
+          items:
+            type: string
         lastModified:
           type: integer
           format: int64
@@ -256,9 +316,41 @@ components:
           type: string
         schedule:
           type: string
+        scheduledAt:
+          type: string
+        executing:
+          type: integer
+          format: int64
         enabled:
           type: boolean
         notifyMail:
           type: string
         notifyErrorMail:
+          type: string
+        params:
+          type: array
+          items:
+            $ref: "#/components/schemas/Parameter"
+
+    RunningInfo:
+      description: |
+        A short info about running state of a script.
+      required:
+        - executing
+      properties:
+        executing:
+          type: integer
+          format: int64
+    Parameter:
+      description: |
+        A description of a script parameter. The `format` is one of
+        `Line`, `Text` or `Password` and indicates the type of input
+        expected from a caller.
+      required:
+        - name
+        - format
+      properties:
+        name:
+          type: string
+        format:
           type: string

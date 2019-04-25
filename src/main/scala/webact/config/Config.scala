@@ -7,7 +7,6 @@ import pureconfig.generic.auto._
 import pureconfig.ConvertHelpers._
 
 case class Config(appName: String
-  , urlBase: String
   , scriptDir: Path
   , tmpDir: Path
   , inheritPath: Boolean

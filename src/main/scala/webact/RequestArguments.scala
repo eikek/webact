@@ -30,14 +30,6 @@ object RequestArguments {
       flatMap(identity)
   }
 
-  def bracket[F[_]: Sync, B](script: String
-    , req: Request[F]
-    , cfg: Config
-    , blockingEc: ExecutionContext)
-    (use: Seq[Path] => F[B])
-    (implicit C: ContextShift[F]): F[B] =
-    Sync[F].bracket(apply(script, req, cfg, blockingEc))(use)(deleteAll[F])
-
   def  fromMultipart[F[_]: Sync](script: String
     , mp: Multipart[F]
     , req: Request[F]
@@ -81,6 +73,7 @@ object RequestArguments {
     , blockingEc: ExecutionContext)(implicit C: ContextShift[F]): F[Path] = {
     for {
       tmp   <- dir.newTempFile("arg-file-XXXXX", "out")
+      _     <- Sync[F].delay(logger.debug(s"Make argument file $tmp"))
       _     <- bytes.through(file.writeAll(tmp, blockingEc, Seq.empty)).compile.drain
       f     <- makeFinalFile(tmp, dir, name)
     } yield f
@@ -91,11 +84,9 @@ object RequestArguments {
       sha   <- tmp.sha256
       fname <- name.map(n => sha + "-" + base64(n)).getOrElse(sha).pure[F]
       file  <- tmp.moveTo(dir / fname)
+      _     <- Sync[F].delay(logger.debug(s"Created argument file $file"))
     } yield file
   }
-
-  private def deleteAll[F[_]: Sync](paths: Seq[Path]): F[Unit] =
-    Traverse[List].sequence(paths.toList.map(p => p.delete)).map(_ => ())
 
   private def base64(plain: String): String =
     java.util.Base64.getEncoder.encodeToString(plain.getBytes(defaultCharset))

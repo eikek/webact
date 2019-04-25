@@ -12,7 +12,7 @@ object Key {
 
   case object Name extends Base
   case object Category extends Base
-  case object SuccessCodes extends Base
+  case object SuccessCode extends Base
   case object Size extends Base
   case object Description extends Base
   case object LastMod extends Base
@@ -20,10 +20,15 @@ object Key {
   case object Enabled extends Base
   case object NotifyMail extends Base
   case object NotifyErrorMail extends Base
+  case object NotifySubject extends Base
+  case object ContentType extends Base
+  case object BadInputCode extends Base
+  case object SentStdErr extends Base
+  case object Param extends Base
 
   val all = Set(Name
     , Category
-    , SuccessCodes
+    , SuccessCode
     , Size
     , Description
     , LastMod
@@ -31,6 +36,11 @@ object Key {
     , Enabled
     , NotifyMail
     , NotifyErrorMail
+    , NotifySubject
+    , ContentType
+    , BadInputCode
+    , SentStdErr
+    , Param
   )
 
   def from(s: String): Option[Key] =

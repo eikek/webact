@@ -7,6 +7,7 @@ import org.http4s._
 import org.http4s.headers._
 import org.http4s.HttpRoutes
 import org.http4s.dsl.Http4sDsl
+import org.slf4j._
 import _root_.io.circe._
 import _root_.io.circe.generic.semiauto._
 import _root_.io.circe.syntax._
@@ -18,26 +19,36 @@ import java.net.URL
 import webact.config._
 
 object TemplateRoutes {
+  private[this] val logger = LoggerFactory.getLogger(getClass)
+
   val `text/html` = new MediaType("text", "html")
 
-
   def indexRoutes[F[_]: Effect](blockingEc: ExecutionContext, cfg: Config)(implicit C: ContextShift[F]): HttpRoutes[F] = {
+    val indexTemplate = Util.memo(loadResource("/index.html").flatMap(loadTemplate(_, blockingEc)))
+    val docTemplate = Util.memo(loadResource("/doc.html").flatMap(loadTemplate(_, blockingEc)))
 
     val dsl = new Http4sDsl[F]{}
     import dsl._
     HttpRoutes.of[F] {
       case GET -> Root / "index.html" =>
         for {
-          src    <- loadResource("/index.html", blockingEc)
-          templ  <- parseTemplate(src)
+          templ  <- indexTemplate
           resp   <- Ok(IndexData(cfg).render(templ), `Content-Type`(`text/html`))
         } yield resp
       case GET -> Root / "doc" =>
         for {
-          src    <- loadResource("/doc.html", blockingEc)
-          templ  <- parseTemplate(src)
+          templ  <- docTemplate
           resp   <- Ok(DocData(cfg).render(templ), `Content-Type`(`text/html`))
         } yield resp
+    }
+  }
+
+  def loadResource[F[_]: Sync](name: String): F[URL] = {
+    Option(getClass.getResource(name)) match {
+      case None =>
+        Sync[F].raiseError(new Exception("Unknown resource: "+ name))
+      case Some(r) =>
+        r.pure[F]
     }
   }
 
@@ -47,15 +58,6 @@ object TemplateRoutes {
       through(text.utf8Decode).
       compile.fold("")(_ + _)
 
-  def loadResource[F[_]: Sync](name: String, blockingEc: ExecutionContext)(implicit C: ContextShift[F]): F[String] = {
-    Option(getClass.getResource(name)) match {
-      case None =>
-        sys.error("Unknown resource: "+ name)
-      case Some(r) =>
-        loadUrl(r, blockingEc)
-    }
-  }
-
   def parseTemplate[F[_]: Sync](str: String): F[Template] =
     Sync[F].delay {
       mustache.parse(str) match {
@@ -63,6 +65,14 @@ object TemplateRoutes {
         case Left((_, err)) => sys.error(err)
       }
     }
+
+  def loadTemplate[F[_]: Sync](url: URL, blockingEc: ExecutionContext)(implicit C: ContextShift[F]): F[Template] = {
+    loadUrl[F](url, blockingEc).flatMap(s => parseTemplate(s)).
+      map(t => {
+        logger.info(s"Compiled template $url")
+        t
+      })
+  }
 
   case class DocData(swaggerRoot: String, openapiSpec: String)
   object DocData {
@@ -98,11 +108,13 @@ object TemplateRoutes {
       IndexData(Flags(cfg)
         , Seq(
           "/app/assets" + Webjars.semanticui + "/semantic.min.css",
+          "/app/assets" + Webjars.highlightjs + "/styles/default.css",
           s"/app/assets/${BuildInfo.name}/${BuildInfo.version}/webact.css"
         )
         , Seq(
           "/app/assets" + Webjars.jquery + "/jquery.min.js",
           "/app/assets" + Webjars.semanticui + "/semantic.min.js",
+          "/app/assets" + Webjars.highlightjs + "/highlight.min.js",
           s"/app/assets/${BuildInfo.name}/${BuildInfo.version}/webact-app.js"
         )
         ,

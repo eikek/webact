@@ -16,4 +16,13 @@ trait ScriptEncoders {
 
   implicit def scriptDetailListEntityEncoder[F[_]: Applicative]: EntityEncoder[F, List[ScriptDetail]] =
     jsonEncoderOf
+
+  implicit def scriptInfoEntityEncoder[F[_]: Applicative]: EntityEncoder[F, ScriptInfo] =
+    jsonEncoderOf
+
+  implicit def scriptInfoListEntityEncoder[F[_]: Applicative]: EntityEncoder[F, List[ScriptInfo]] =
+    jsonEncoderOf
+
+  implicit def runningInfoEntityEncoder[F[_]: Applicative]: EntityEncoder[F, RunningInfo] =
+    jsonEncoderOf
 }
