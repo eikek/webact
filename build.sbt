@@ -4,7 +4,7 @@ import com.typesafe.sbt.SbtGit.GitKeys._
 
 val sharedSettings = Seq(
   organization := "com.github.eikek",
-  version := "0.1.0-SNAPSHOT",
+  version := "0.1.0",
   scalaVersion := "2.12.8",
   scalacOptions ++= Seq(
     "-deprecation",
