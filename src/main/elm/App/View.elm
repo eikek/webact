@@ -18,7 +18,7 @@ view model =
                          [i [classList [("cog icon", True)
                                        ]]
                               []
-                         ,text "Webact"]
+                         ,text model.flags.appName]
                    ]
               ]
         , div [ class "ui container main-content" ]

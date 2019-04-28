@@ -26,4 +26,6 @@ trait ScriptApp[F[_]] {
   def schedule(name: String, timer: String): F[Option[ScheduleData[F]]]
 
   def init: F[Unit]
+
+  def startMonitoring: F[F[Unit]]
 }

@@ -74,8 +74,7 @@ view model =
                    ]
               ]
             [text "The script is currently executing! Running time "
-            ,prop 0 .executing |> String.fromInt |> text
-            ,text "ms"
+            ,Util.Duration.toHuman (prop 0 .executing) |> text
             ]
         , div [classList
                    [("ui info message", True)

@@ -1,0 +1,24 @@
+language: scala
+scala:
+  - 2.12.8
+
+jdk:
+  - openjdk8
+
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/boot
+    - elm-stuff/packages
+    - sysconfcpus
+
+install:
+  - node --version
+  - npm --version
+  - npm install -g elm@0.19.0
+
+before_script:
+  - export TZ=Europe/Berlin
+
+script:
+  - sbt ++$TRAVIS_SCALA_VERSION ";project root ;test"

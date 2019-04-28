@@ -1,6 +1,7 @@
 package webact.app
 
 import fs2._
+import fs2.io.Watcher._
 import cats.effect.{ContextShift, Timer, Sync, Concurrent}
 import cats.effect.concurrent.Ref
 import cats.implicits._
@@ -129,6 +130,51 @@ final class ScriptAppImpl[F[_]: Concurrent](cfg: Config, blockingEc: ExecutionCo
     )).
       map(_.join).
       map(_ => ())
+
+  def startMonitoring: F[F[Unit]] = {
+    if (cfg.monitorScripts) startMonitoring0
+    else Sync[F].delay(logger.info("Not monitoring script directory, because it is disabled in config file")).map(_ => ().pure[F])
+  }
+
+  private def startMonitoring0: F[F[Unit]] = {
+    val eventFilter: Event => Option[Path] = {
+      case Event.Created(p, c) =>
+        Option(p).filter(_ => !p.name.startsWith("."))
+      case Event.Modified(p, c) =>
+        Option(p).filter(_ => !p.name.startsWith("."))
+      case Event.Deleted(p, c) =>
+        Option(p).filter(_ => !p.name.startsWith("."))
+      case _ =>
+        Some(cfg.scriptDir)
+    }
+
+    val monitor: F[Unit] = io.file.watcher.
+      use(watcher => {
+        watcher.watch(cfg.scriptDir, Seq(EventType.Created, EventType.Modified,EventType.Deleted)).
+          flatMap { _ =>
+            watcher.events().
+              map(eventFilter).
+              evalMap({
+                case Some(f) if f == cfg.scriptDir =>
+                  Sync[F].delay(logger.info("Reloading all scripts due to unknown external event")) >> init
+                case Some(f) =>
+                  find(f.name).flatMap {
+                    case Some(sc) =>
+                      Sync[F].delay(logger.info(s"Reloading script $f due to external changes")) >>
+                      schedule(sc.meta.getHeadOr(Key.Name, ""), sc.meta.getHeadOr(Key.Schedule, "")).map(_ => ())
+                    case None =>
+                      ().pure[F]
+                  }
+
+                case None =>
+                  ().pure[F]
+              }).
+              compile.drain
+          }
+      })
+
+    Concurrent[F].start(monitor).map(_.join)
+  }
 
   private def deleteAll(paths: Seq[Path]): F[Unit] =
     for {

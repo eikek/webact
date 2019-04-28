@@ -19,6 +19,7 @@ object WebactServer {
     val app = for {
       scriptApp  <- ScriptAppImpl.create[F](cfg, blockingEc)
       _          <- scriptApp.init
+      _          <- scriptApp.startMonitoring
 
       httpApp = Router(
         "/api/v1" -> ScriptRoutes.scriptRoutes[F](scriptApp, blockingEc, cfg),
