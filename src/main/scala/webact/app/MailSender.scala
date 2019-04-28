@@ -58,26 +58,44 @@ object MailSender {
 
     def makeSession(mx: Option[String]): Either[Exception, Session] = {
       val props = System.getProperties()
+      props.setProperty("mail.transport.protocol", "smtp");
       if (settings.host.nonEmpty) {
+        logger.debug(s"Using configured smtp settings: ${settings.maskPassword}")
         props.setProperty("mail.smtp.host", settings.host)
         if (settings.port > 0) {
           props.setProperty("mail.smtp.port", settings.port.toString)
         }
         if (settings.user.nonEmpty) {
           props.setProperty("mail.user", settings.user)
+          props.setProperty("mail.smtp.auth", "true")
         }
-        if (settings.password.nonEmpty) {
-          props.setProperty("mail.password", settings.password)
+        if (settings.startTls) {
+          props.setProperty("mail.smtp.starttls.enable", "true")
+        }
+        if (settings.useSsl) {
+          props.setProperty("mail.smtp.ssl.enable", "true")
         }
       } else {
+        logger.debug(s"Using MX resolved host '$mx' for smtp")
         mx.foreach { host =>
-          logger.debug("using mx: "+ host)
           props.setProperty("mail.smtp.host", host)
         }
       }
-      if (Option(props.getProperty("mail.smtp.host")).exists(_.nonEmpty))
-        Right(Session.getInstance(props))
-      else Left(new Exception("no smtp host provided"))
+      Option(props.getProperty("mail.smtp.host")) match {
+        case Some(_) =>
+          Right(if (settings.user.nonEmpty) {
+            Session.getInstance(props, new Authenticator() {
+              override def getPasswordAuthentication() = {
+                logger.debug(s"Authenticating with ${settings.user}/${settings.maskPassword.password}")
+                new PasswordAuthentication(settings.user, settings.password)
+              }
+            })
+          } else {
+            Session.getInstance(props)
+          })
+        case None =>
+          Left(new Exception("no smtp host provided"))
+      }
     }
 
     def findMx(domain: String): List[String] = {
@@ -91,10 +109,7 @@ object MailSender {
   }
 
   object SmtpClient {
-//    def apply(): SmtpClient = new SmtpClient(Config.Smtp("", 0, "", "", Mail("pill@test.com")))
     def apply(s: Config.Smtp): SmtpClient = new SmtpClient(s)
-
-  //  def fromConfig = apply(Config.master.smtp)
   }
 
 }

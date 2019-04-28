@@ -23,7 +23,17 @@ object Config {
     else Paths.get(s).toAbsolutePath.normalize
   ))
 
-  case class Smtp(host: String, port: Int, user: String, password: String, sender: String)
+  case class Smtp(host: String
+    , port: Int
+    , user: String
+    , password: String
+    , startTls: Boolean
+    , useSsl: Boolean
+    , sender: String) {
+
+    def maskPassword =
+      copy(password = if (password.nonEmpty) "***" else "<none>")
+  }
 
   case class Bind(host: String, port: Int)
 
