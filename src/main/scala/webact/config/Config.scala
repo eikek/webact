@@ -12,6 +12,7 @@ case class Config(appName: String
   , inheritPath: Boolean
   , extraPath: Seq[String]
   , env: Map[String, String]
+  , monitorScripts: Boolean
   , bind: Config.Bind
   , smtp: Config.Smtp)
 
