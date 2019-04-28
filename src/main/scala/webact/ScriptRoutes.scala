@@ -114,7 +114,7 @@ object ScriptRoutes extends ScriptEncoders {
               } yield ScriptInfo(detail(s, name.flatMap(S.findSchedule), exe), None)
           }).
           compile.toList.
-          flatMap(list => Ok(list))
+          flatMap(list => Ok(list.sortBy(_.script.name)))
     }
   }
 
