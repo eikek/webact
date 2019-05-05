@@ -43,7 +43,7 @@ init flags url key =
 
 viewDoc: Model -> Document Msg
 viewDoc model =
-    { title = "Webact"
+    { title = model.flags.appName
     , body = [ (view model) ]
     }
 

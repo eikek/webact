@@ -7,6 +7,7 @@ import org.http4s.headers._
 import org.http4s.multipart._
 import org.http4s.HttpRoutes
 import org.http4s.dsl.Http4sDsl
+import org.http4s.circe.CirceEntityEncoder._
 import scala.concurrent.ExecutionContext
 import java.time._
 
@@ -14,7 +15,7 @@ import webact.app._
 import webact.model._
 import webact.config._
 
-object ScriptRoutes extends ScriptEncoders {
+object ScriptRoutes {
   val `text/plain` = new MediaType("text", "plain")
   val noCache = `Cache-Control`(CacheDirective.`no-cache`())
 
@@ -83,6 +84,7 @@ object ScriptRoutes extends ScriptEncoders {
         } yield resp
 
       case GET -> Root / "scripts" / name / "content" =>
+        import EntityEncoder.streamEncoder //ambigous implicits with CirceEncoders
         for {
           sc   <- S.find(name)
           resp <- sc.map(o => Ok(o.content, `Content-Type`(`text/plain`)).
