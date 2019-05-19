@@ -2,11 +2,11 @@ import sbt._
 
 object Dependencies {
 
-  val Http4sVersion = "0.20.0-RC1"
+  val Http4sVersion = "0.20.1"
   val CirceVersion = "0.11.1"
   val LogbackVersion = "1.2.3"
-  val pureConfigVersion = "0.10.2"
-  val miniTestVersion = "2.3.2"
+  val pureConfigVersion = "0.11.0"
+  val miniTestVersion = "2.4.0"
   val kindProjectorVersion = "0.9.10"
   val betterMonadicForVersion = "0.3.0"
   val javaxMailVersion = "1.6.2"
@@ -34,7 +34,7 @@ object Dependencies {
   )
 
   val fastparse = Seq(
-    "com.lihaoyi" %% "fastparse" % "2.1.0"
+    "com.lihaoyi" %% "fastparse" % "2.1.2"
   )
 
   val javaxMail = Seq(
@@ -48,9 +48,9 @@ object Dependencies {
   )
 
   val webjars = Seq(
-    "swagger-ui" -> "3.22.0",
+    "swagger-ui" -> "3.22.1",
     "Semantic-UI" -> "2.4.1",
-    "jquery" -> "3.4.0",
+    "jquery" -> "3.4.1",
     "highlightjs" -> "9.8.0"
   ).map({case (a, v) => "org.webjars" % a % v })
 
