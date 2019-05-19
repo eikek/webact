@@ -1,5 +1,6 @@
 package webact
 
+import fs2.Stream
 import cats.effect._
 import cats.implicits._
 import org.http4s._
@@ -84,10 +85,13 @@ object ScriptRoutes {
         } yield resp
 
       case GET -> Root / "scripts" / name / "content" =>
-        import EntityEncoder.streamEncoder //ambigous implicits with CirceEncoders
+        //ambigous implicits with CirceEncoders
+        implicit val enc: EntityEncoder[F,Stream[F,String]] =
+          EntityEncoder.streamEncoder[F, String](EntityEncoder.stringEncoder[F]).
+            withContentType(`Content-Type`(`text/plain`))
         for {
           sc   <- S.find(name)
-          resp <- sc.map(o => Ok(o.content, `Content-Type`(`text/plain`)).
+          resp <- sc.map(o => Ok(o.asUtf8, `Content-Type`(`text/plain`)).
             map(_.withHeaders(noCache))).
             getOrElse(NotFound())
         } yield resp

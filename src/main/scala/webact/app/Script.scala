@@ -14,6 +14,9 @@ case class Script[F[_]](content: Stream[F, Byte], meta: MetaHeader) {
 
   def update(m: MetaHeader): Script[F] =
     Script(content, meta ++ m)
+
+  def asUtf8: Stream[F, String] =
+    content.through(fs2.text.utf8Decode)
 }
 
 object Script {
