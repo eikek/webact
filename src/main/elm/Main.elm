@@ -39,7 +39,7 @@ init flags url key =
         im = App.Data.init key url flags
         cmd = App.Update.initCmd im
     in
-        (im, Cmd.batch [ cmd, Ports.initElements() ])
+        (im, Cmd.batch [ cmd, Ports.initElements(), Api.versionInfo VersionResp ])
 
 viewDoc: Model -> Document Msg
 viewDoc model =

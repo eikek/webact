@@ -7,6 +7,15 @@ import Json.Decode as Decode
 import Data.ScriptInfo exposing (ScriptInfo)
 import Data.Argument exposing (Argument)
 import Data.RunningInfo exposing (RunningInfo)
+import Data.Version exposing (Version)
+
+versionInfo: ((Result Http.Error Version) -> msg) -> Cmd msg
+versionInfo receive =
+    Http.get
+        { url = "/api/info/version"
+        , expect = Http.expectJson receive Data.Version.versionDecoder
+        }
+
 
 fetchScripts: String -> ((Result Http.Error (List ScriptInfo)) -> msg) -> Cmd msg
 fetchScripts baseurl receive =

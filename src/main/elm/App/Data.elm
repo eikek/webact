@@ -6,6 +6,7 @@ import Url exposing (Url)
 import Http
 import Data.Flags exposing (Flags)
 import Data.ScriptInfo exposing (ScriptInfo)
+import Data.Version exposing (Version)
 import Page exposing (Page(..))
 import Page.Listing.Data
 import Page.Detail.Data
@@ -15,6 +16,7 @@ type alias Model =
     { flags: Flags
     , key: Key
     , page: Page
+    , version: Version
     , listingModel: Page.Listing.Data.Model
     , detailModel: Page.Detail.Data.Model
     , createModel: Page.Create.Data.Model
@@ -31,6 +33,7 @@ init key url flags =
         { flags = flags
         , key = key
         , page = page
+        , version = Data.Version.empty
         , listingModel = Page.Listing.Data.emptyModel
         , detailModel = Page.Detail.Data.emptyModel flags.apiBase detailName
         , createModel = Page.Create.Data.emptyModel flags
@@ -39,6 +42,7 @@ init key url flags =
 type Msg
     = NavRequest UrlRequest
     | NavChange Url
+    | VersionResp (Result Http.Error Version)
     | AllScripts (Result Http.Error (List ScriptInfo))
     | ListingMsg Page.Listing.Data.Msg
     | DetailMsg Page.Detail.Data.Msg

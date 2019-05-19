@@ -33,6 +33,12 @@ update msg model =
             , Cmd.none
             )
 
+        VersionResp (Ok info) ->
+            ({model|version = info}, Cmd.none)
+
+        VersionResp (Err err) ->
+            (model, Cmd.none)
+
         NavRequest req ->
             case req of
                 Internal url ->

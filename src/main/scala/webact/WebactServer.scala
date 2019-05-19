@@ -22,6 +22,7 @@ object WebactServer {
       _          <- scriptApp.startMonitoring
 
       httpApp = Router(
+        "/api/info" -> InfoRoutes.infoRoutes(cfg),
         "/api/v1" -> ScriptRoutes.scriptRoutes[F](scriptApp, blockingEc, cfg),
         "/app/assets" -> WebjarRoutes.appRoutes[F](blockingEc, cfg),
         "/app" -> TemplateRoutes.indexRoutes[F](blockingEc, cfg)

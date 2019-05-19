@@ -30,3 +30,13 @@ body {
 .default-layout textarea.script-edit {
     font-family: monospace,monospace;
 }
+
+@media (min-height: 320px) {
+  .default-layout .ui.footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    text-align: center;
+    font-size: x-small;
+  }
+}

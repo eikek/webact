@@ -31,6 +31,18 @@ view model =
                        viewCreate model
               )
             ]
+        , div [ class "ui footer" ]
+            [ a [href "https://github.com/eikek/webact"]
+                [ i [class "ui github icon"][]
+                ]
+            , span []
+                  [ text "Webact "
+                  , text model.version.version
+                  , text "(#"
+                  , String.left 8 model.version.gitCommit |> text
+                  , text ")"
+                  ]
+            ]
         ]
 
 viewListing: Model -> Html Msg
