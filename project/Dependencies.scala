@@ -10,7 +10,7 @@ object Dependencies {
   val kindProjectorVersion = "0.9.10"
   val betterMonadicForVersion = "0.3.0"
   val javaxMailVersion = "1.6.2"
-  val dnsJavaVersion = "2.1.8"
+  val dnsJavaVersion = "2.1.9"
 
   val http4s = Seq(
     "org.http4s" %% "http4s-blaze-server" % Http4sVersion,
@@ -48,7 +48,7 @@ object Dependencies {
   )
 
   val webjars = Seq(
-    "swagger-ui" -> "3.22.1",
+    "swagger-ui" -> "3.22.2",
     "Semantic-UI" -> "2.4.1",
     "jquery" -> "3.4.1",
     "highlightjs" -> "9.8.0"
