@@ -8,7 +8,7 @@ object MetaParser {
   private[this] val logger = LoggerFactory.getLogger(getClass)
 
   def parseMeta(content: String): MetaHeader =
-    parse(content, metaMap(_)) match {
+    parse(content.replace("\r\n", "\n"), metaMap(_)) match {
       case Parsed.Success(v, _) => v
       case f@Parsed.Failure(a, b ,c) =>
         val trace = f.trace()
@@ -17,7 +17,7 @@ object MetaParser {
         MetaHeader(Key.Enabled -> "true")
     }
 
-  def newline[_: P] = P("\r\n" | "\n")
+  def newline[_: P] = P("\n")
 
   def webactStart[_: P] = "<webact>"
   def webactEnd[_: P] = "</webact>"
@@ -37,18 +37,18 @@ object MetaParser {
     P(CharIn("a-z", "A-Z") ~ CharIn("a-z", "A-Z", "0-9", "+_\\-").rep).!
 
   def value[_: P]: P[String] =
-    P(CharsWhile(c => c != '\n' && c != '\r').!)
+    P(CharsWhile(c => c != '\n').!)
 
   def keyValue[_: P](offset: Int): P[(String, String)] =
-    (skip(offset) ~ " ".rep ~ key ~ " ".rep ~ P(":") ~ " ".rep ~ value ~ newline)
+    (skip(offset) ~ " ".rep ~ key ~ " ".rep ~ ":" ~ " ".rep ~ value ~ newline)
 
   def keyValues[_: P](offset: Int): P[MetaHeader] =
     keyValue(offset).rep.map(makeMap)
 
   def description[_: P](offset: Int) = {
     (P(P(!webactEnd ~ AnyChar).rep.!).map { str =>
-      str.split("\r\n|\n").
-        map(line => if (line.length > offset) line.substring(offset) else "\n").
+      str.split("\n").
+        map(line => if (line.length > offset) line.substring(offset).trim else "\n").
         filter(_.nonEmpty).
         mkString("\n")
     }) ~ webactEnd
@@ -58,7 +58,7 @@ object MetaParser {
     gotoStart.flatMap { bol =>
       lineStart.flatMap { bow =>
         val offset = math.max(0, bow - bol - 2)
-        P(webactStart ~ newline ~ keyValues(offset) ~ description(offset)).map {
+        P(webactStart ~ keyValues(offset) ~ description(offset)).map {
           case (m0, desc) => m0.updated(Key.Description, List(desc))
         }
       }
