@@ -38,7 +38,7 @@ view model =
             , span []
                   [ text "Webact "
                   , text model.version.version
-                  , text "(#"
+                  , text " (#"
                   , String.left 8 model.version.gitCommit |> text
                   , text ")"
                   ]
