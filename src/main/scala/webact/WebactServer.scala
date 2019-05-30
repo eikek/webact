@@ -23,7 +23,7 @@ object WebactServer {
 
       httpApp = Router(
         "/api/info" -> InfoRoutes.infoRoutes(cfg),
-        "/api/v1" -> ScriptRoutes.scriptRoutes[F](scriptApp, blockingEc, cfg),
+        "/api/v1" -> (ScriptJsonRoutes.routes[F](scriptApp, blockingEc, cfg) <+> ScriptDataRoutes.routes[F](scriptApp, blockingEc, cfg)),
         "/app/assets" -> WebjarRoutes.appRoutes[F](blockingEc, cfg),
         "/app" -> TemplateRoutes.indexRoutes[F](blockingEc, cfg)
       ).orNotFound
