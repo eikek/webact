@@ -7,8 +7,9 @@ import org.slf4j._
 object MetaParser {
   private[this] val logger = LoggerFactory.getLogger(getClass)
 
-  def parseMeta(content: String): MetaHeader =
-    parse(content.replace("\r\n", "\n"), metaMap(_)) match {
+  def parseMeta(content: String): MetaHeader = {
+    val in = cutWebactBlock(content)
+    parse(in, metaMap(_)) match {
       case Parsed.Success(v, _) => v
       case f@Parsed.Failure(a, b ,c) =>
         val trace = f.trace()
@@ -16,22 +17,33 @@ object MetaParser {
         logger.warn(s"Content is: ${content}")
         MetaHeader(Key.Enabled -> "true")
     }
+  }
+
+  def cutWebactBlock(str: String): String = {
+    val block = (str.indexOf("<webact>") match {
+      case -1 => ""
+      case n =>
+        val k = str.lastIndexOf('\n', n) match {
+          case -1 => 0
+          case x => x
+        }
+        str.indexOf("</webact>", n) match {
+          case -1 => ""
+          case m => str.substring(k, m+10).trim
+        }
+    }).trim
+    val prefix = block.indexOf("<webact>")
+    if (prefix <= 0) block.replace("\r\n", "\n")
+    else block.replace("\r\n", "\n").
+      split('\n').
+      map(line => if (line.length > prefix) line.substring(prefix) else "").
+      mkString("\n")
+  }
 
   def newline[_: P] = P("\n")
 
   def webactStart[_: P] = "<webact>"
   def webactEnd[_: P] = "</webact>"
-
-  def webactStartLine[_: P] =
-    P(newline ~ P(!webactStart ~ AnyChar).rep)
-
-  def lineStart[_: P]: P[Int] = P(P(!webactStart ~ AnyChar).rep ~ Index)
-
-  def skip[_: P](count: Int) = AnyChar.rep(exactly = count)
-
-  def gotoStart[_: P]: P[Int] =
-    P(!webactStartLine ~ AnyChar).rep ~ newline ~ Index
-
 
   def key[_: P]: P[String] =
     P(CharIn("a-z", "A-Z") ~ CharIn("a-z", "A-Z", "0-9", "+_\\-").rep).!
@@ -39,29 +51,19 @@ object MetaParser {
   def value[_: P]: P[String] =
     P(CharsWhile(c => c != '\n').!)
 
-  def keyValue[_: P](offset: Int): P[(String, String)] =
-    (skip(offset) ~ " ".rep ~ key ~ " ".rep ~ ":" ~ " ".rep ~ value ~ newline)
+  def keyValue[_: P]: P[(String, String)] =
+    (key ~ " ".rep ~ ":" ~ " ".rep ~ value ~ newline)
 
-  def keyValues[_: P](offset: Int): P[MetaHeader] =
-    keyValue(offset).rep.map(makeMap)
+  def keyValues[_: P]: P[MetaHeader] =
+    keyValue.rep.map(makeMap)
 
-  def description[_: P](offset: Int) = {
-    (P(P(!webactEnd ~ AnyChar).rep.!).map { str =>
-      str.split("\n").
-        map(line => if (line.length > offset) line.substring(offset).trim else "\n").
-        filter(_.nonEmpty).
-        mkString("\n")
-    }) ~ webactEnd
+  def description[_: P] = {
+    (P(P(!webactEnd ~ AnyChar).rep.!).map { str => str.trim}) ~ webactEnd
   }
 
   def metaMap[_:P]: P[MetaHeader] =
-    gotoStart.flatMap { bol =>
-      lineStart.flatMap { bow =>
-        val offset = math.max(0, bow - bol - 2)
-        P(webactStart ~ keyValues(offset) ~ description(offset)).map {
-          case (m0, desc) => m0.updated(Key.Description, List(desc))
-        }
-      }
+    P(webactStart ~ newline ~ keyValues ~ description).map {
+      case (m0, desc) => m0.updated(Key.Description, List(desc.trim))
     }
 
   private def makeMap(p: Seq[(String, String)]): MetaHeader =
