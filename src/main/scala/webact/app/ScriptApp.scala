@@ -13,6 +13,8 @@ trait ScriptApp[F[_]] {
 
   def store(name: String, bytes: Stream[F, Byte]): F[Unit]
 
+  def delete(name: String): F[Unit]
+
   def execute(
       name: String,
       args: Seq[Path],

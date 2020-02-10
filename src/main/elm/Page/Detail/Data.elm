@@ -1,26 +1,30 @@
 module Page.Detail.Data exposing (..)
 
-import Http
-import File exposing (File)
 import Api
-import Data.ScriptInfo exposing (ScriptInfo)
-import Data.RunningInfo exposing (RunningInfo)
+import Comp.YesNoDimmer
 import Data.Argument exposing (..)
 import Data.Param exposing (Format)
+import Data.RunningInfo exposing (RunningInfo)
+import Data.ScriptInfo exposing (ScriptInfo)
+import File exposing (File)
+import Http
+
 
 type alias Model =
-    { scriptName: String
-    , scriptContent: String
-    , scriptStdout: String
-    , scriptStderr: String
-    , info: Maybe ScriptInfo
-    , baseurl: String
-    , tab: Tab
-    , contentEdit: Bool
-    , runArgs: List Argument
+    { scriptName : String
+    , scriptContent : String
+    , scriptStdout : String
+    , scriptStderr : String
+    , info : Maybe ScriptInfo
+    , baseurl : String
+    , tab : Tab
+    , contentEdit : Bool
+    , runArgs : List Argument
+    , deleteConfirm : Comp.YesNoDimmer.Model
     }
 
-emptyModel: String -> String -> Model
+
+emptyModel : String -> String -> Model
 emptyModel baseurl name =
     { scriptName = name
     , scriptContent = ""
@@ -31,26 +35,41 @@ emptyModel baseurl name =
     , tab = Run
     , contentEdit = False
     , runArgs = []
+    , deleteConfirm = Comp.YesNoDimmer.emptyModel
     }
 
-type Tab = Run | Content | Stdout | Stderr
 
-tabToString: Tab -> String
+type Tab
+    = Run
+    | Content
+    | Stdout
+    | Stderr
+
+
+tabToString : Tab -> String
 tabToString tab =
     case tab of
-        Run -> "Run"
-        Content -> "Content"
-        Stdout -> "Stdout"
-        Stderr -> "Stderr"
+        Run ->
+            "Run"
+
+        Content ->
+            "Content"
+
+        Stdout ->
+            "Stdout"
+
+        Stderr ->
+            "Stderr"
 
 
-appendArgument: Model -> Model
+appendArgument : Model -> Model
 appendArgument model =
-    {model | runArgs = Data.Argument.appendArg (Data.Argument.makeTextArg "" "" 0) model.runArgs }
+    { model | runArgs = Data.Argument.appendArg (Data.Argument.makeTextArg "" "" 0) model.runArgs }
 
-replaceArgument: Argument -> Model -> Model
+
+replaceArgument : Argument -> Model -> Model
 replaceArgument arg model =
-    {model | runArgs = Data.Argument.replaceArg arg model.runArgs}
+    { model | runArgs = Data.Argument.replaceArg arg model.runArgs }
 
 
 type Msg
@@ -76,8 +95,15 @@ type Msg
     | RequestFile Argument Bool
     | FileSelected Argument (List File) File
     | ClearFiles Argument
+    | DeleteScript
+    | DeleteScriptResp (Result Http.Error ())
+    | DeleteConfirmMsg Comp.YesNoDimmer.Msg
 
-initCmd: Model -> String -> Cmd Msg
+
+initCmd : Model -> String -> Cmd Msg
 initCmd model name =
-    if model.scriptName == name then Cmd.none
-    else Api.scriptDetail model.baseurl name ScriptDetailRes
+    if model.scriptName == name then
+        Cmd.none
+
+    else
+        Api.scriptDetail model.baseurl name ScriptDetailRes

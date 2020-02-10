@@ -95,6 +95,9 @@ object ScriptDataRoutes {
             .map(p => S.store(name, p.body).flatMap(_ => Ok()))
             .getOrElse(BadRequest())
         } yield resp
+
+      case DELETE -> Root / "scripts" / name =>
+        S.delete(name).flatMap(_ => Ok())
     }
   }
 

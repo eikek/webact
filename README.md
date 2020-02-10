@@ -285,6 +285,5 @@ webact {
 ## TODO
 
 - git support
-- order listing by output state (errrors first, then last run date,
+- order listing by output state (errors first, then last run date,
   then last modified)
-- delete a script or remove the button

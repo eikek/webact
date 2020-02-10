@@ -59,6 +59,11 @@ final class ScriptAppImpl[F[_]: Concurrent](
       })
   }
 
+  def delete(name: String): F[Unit] = {
+    val file = cfg.scriptDir.resolve(name)
+    Sync[F].delay(logger.info(s"Deleting script $name")) *> file.delete.map(_ => ())
+  }
+
   def store(name: String, bytes: Stream[F, Byte]): F[Unit] = {
     val file = cfg.scriptDir.resolve(name)
     Sync[F].delay(logger.info(s"Storing new version of $name")) >>

@@ -1,166 +1,249 @@
 module Page.Detail.Update exposing (update)
 
-import File.Select as Select
 import Api
-import Ports
-import Page.Detail.Data exposing (..)
+import Comp.YesNoDimmer
 import Data.Argument exposing (Argument)
+import File.Select as Select
+import Page exposing (Page(..))
+import Page.Detail.Data exposing (..)
 
-update: Msg -> Model -> (Model, Cmd Msg)
+
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ChangeName n ->
-            ( {model | scriptName = n }
+            ( { model | scriptName = n }
             , initCmd model n
             )
 
         ChangeTab Content ->
-            ( {model | tab = Content }
-            , if model.scriptContent /= "" then Cmd.none
-              else Api.scriptContent model.baseurl model.scriptName ScriptCnt
+            ( { model | tab = Content }
+            , if model.scriptContent /= "" then
+                Cmd.none
+
+              else
+                Api.scriptContent model.baseurl model.scriptName ScriptCnt
             )
+
         ChangeTab Stdout ->
-            ( {model | tab = Stdout }
-            , if model.scriptStdout /= "" then Cmd.none
-              else Api.scriptStdout model.baseurl model.scriptName ScriptOut
+            ( { model | tab = Stdout }
+            , if model.scriptStdout /= "" then
+                Cmd.none
+
+              else
+                Api.scriptStdout model.baseurl model.scriptName ScriptOut
             )
+
         ChangeTab Stderr ->
-            ( {model | tab = Stderr }
-            , if model.scriptStderr /= "" then Cmd.none
-              else Api.scriptStderr model.baseurl model.scriptName ScriptErr
+            ( { model | tab = Stderr }
+            , if model.scriptStderr /= "" then
+                Cmd.none
+
+              else
+                Api.scriptStderr model.baseurl model.scriptName ScriptErr
             )
+
         ChangeTab tab ->
-            ( {model | tab = tab }
+            ( { model | tab = tab }
             , Cmd.none
             )
 
         ScriptDetailRes (Ok info) ->
-            ( {model | info = Just info
-              , contentEdit = False
-              , tab = if model.contentEdit then Content else Run
-              , runArgs = List.map Data.Argument.fromParam info.script.params
-              , scriptContent = if model.contentEdit then model.scriptContent else ""
-              , scriptStderr = ""
-              , scriptStdout = "" }
-            , if info.script.executing == 0 then Cmd.none
-              else Api.runningState model.baseurl model.scriptName RunningStateRes
+            ( { model
+                | info = Just info
+                , contentEdit = False
+                , tab =
+                    if model.contentEdit then
+                        Content
+
+                    else
+                        Run
+                , runArgs = List.map Data.Argument.fromParam info.script.params
+                , scriptContent =
+                    if model.contentEdit then
+                        model.scriptContent
+
+                    else
+                        ""
+                , scriptStderr = ""
+                , scriptStdout = ""
+              }
+            , if info.script.executing == 0 then
+                Cmd.none
+
+              else
+                Api.runningState model.baseurl model.scriptName RunningStateRes
             )
+
         ScriptDetailRes (Err err) ->
-            (model, Cmd.none)
+            ( model, Cmd.none )
 
         RunningStateRes (Ok ri) ->
             let
-                ns = Maybe.map .script model.info
-                     |> Maybe.map (\s -> {s|executing = ri.executing})
-                ni = Maybe.map (\i -> {i | script = Maybe.withDefault i.script ns}) model.info
+                ns =
+                    Maybe.map .script model.info
+                        |> Maybe.map (\s -> { s | executing = ri.executing })
+
+                ni =
+                    Maybe.map (\i -> { i | script = Maybe.withDefault i.script ns }) model.info
             in
-            ( {model | info = ni }
-            , if ri.executing == 0 then Api.scriptDetail model.baseurl model.scriptName ScriptDetailRes
-              else Api.runningState model.baseurl model.scriptName RunningStateRes
+            ( { model | info = ni }
+            , if ri.executing == 0 then
+                Api.scriptDetail model.baseurl model.scriptName ScriptDetailRes
+
+              else
+                Api.runningState model.baseurl model.scriptName RunningStateRes
             )
 
         RunningStateRes (Err err) ->
-            (model, Cmd.none)
+            ( model, Cmd.none )
 
         ScriptCnt (Ok cnt) ->
-            ({model | scriptContent = cnt}, Cmd.none)
+            ( { model | scriptContent = cnt }, Cmd.none )
 
         ScriptCnt (Err err) ->
-            (model, Cmd.none)
+            ( model, Cmd.none )
 
         ScriptOut (Ok cnt) ->
-            ({model | scriptStdout = cnt}, Cmd.none)
+            ( { model | scriptStdout = cnt }, Cmd.none )
 
         ScriptOut (Err err) ->
-            (model, Cmd.none)
+            ( model, Cmd.none )
 
         ScriptErr (Ok cnt) ->
-            ({model | scriptStderr = cnt}, Cmd.none)
+            ( { model | scriptStderr = cnt }, Cmd.none )
 
         ScriptErr (Err err) ->
-            (model, Cmd.none)
+            ( model, Cmd.none )
 
         EnterContentEdit ->
             ( { model | contentEdit = True }
             , Cmd.none
             )
+
         CancelContentEdit ->
             ( { model | contentEdit = False }
             , Cmd.none
             )
+
         SaveContentEdit ->
-            (model
+            ( model
             , Api.scriptUpload
                 model.baseurl
                 model.scriptName
-                model.scriptContent ContentSaved)
+                model.scriptContent
+                ContentSaved
+            )
+
         SetScriptContent cnt ->
-            ({model | scriptContent = cnt, scriptStdout = "", scriptStderr = "" }
-            ,Cmd.none
+            ( { model | scriptContent = cnt, scriptStdout = "", scriptStderr = "" }
+            , Cmd.none
             )
 
         ContentSaved (Ok ()) ->
             ( model
             , Api.scriptDetail model.baseurl model.scriptName ScriptDetailRes
             )
+
         ContentSaved (Err err) ->
-            (model, Cmd.none)
+            ( model, Cmd.none )
 
         AddArgument ->
             ( appendArgument model
             , Cmd.none
             )
+
         RemoveArgument arg ->
-            ( {model | runArgs = Data.Argument.removeArg arg model.runArgs}
+            ( { model | runArgs = Data.Argument.removeArg arg model.runArgs }
             , Cmd.none
             )
+
         SetArgumentName arg str ->
             let
-                narg = Data.Argument.setName str arg
+                narg =
+                    Data.Argument.setName str arg
             in
-            (replaceArgument narg model, Cmd.none)
+            ( replaceArgument narg model, Cmd.none )
+
         SetArgumentText arg str ->
             let
-                narg = Data.Argument.setText str arg
+                narg =
+                    Data.Argument.setText str arg
             in
-            (replaceArgument narg model, Cmd.none)
+            ( replaceArgument narg model, Cmd.none )
+
         SetArgumentType arg el ->
             let
-                narg = Data.Argument.setInput el arg
+                narg =
+                    Data.Argument.setInput el arg
             in
-                (replaceArgument narg model, Cmd.none)
+            ( replaceArgument narg model, Cmd.none )
 
         RunScript ->
-            ( {model| scriptStdout = "", scriptStderr = ""}
+            ( { model | scriptStdout = "", scriptStderr = "" }
             , Api.runScript
                 model.baseurl
                 model.scriptName
                 model.runArgs
                 RunScriptRes
             )
+
         RunScriptRes (Ok ()) ->
-            ({model| scriptStdout = "", scriptStderr = ""}
+            ( { model | scriptStdout = "", scriptStderr = "" }
             , Api.scriptDetail model.baseurl model.scriptName ScriptDetailRes
             )
+
         RunScriptRes (Err err) ->
-            ( {model| scriptStdout = "", scriptStderr = ""}
+            ( { model | scriptStdout = "", scriptStderr = "" }
             , Cmd.none
             )
 
         RequestFile arg multi ->
             ( model
-            , if multi then Select.files [] (\f -> \fl -> FileSelected arg fl f)
-              else Select.file [] (FileSelected arg [])
+            , if multi then
+                Select.files [] (\f -> \fl -> FileSelected arg fl f)
+
+              else
+                Select.file [] (FileSelected arg [])
             )
 
         FileSelected arg list file ->
             let
-                narg = Data.Argument.setFile (file :: list) arg
+                narg =
+                    Data.Argument.setFile (file :: list) arg
             in
-                (replaceArgument narg model, Cmd.none)
+            ( replaceArgument narg model, Cmd.none )
 
         ClearFiles arg ->
             let
-                narg = Data.Argument.setFile [] arg
+                narg =
+                    Data.Argument.setFile [] arg
             in
-                (replaceArgument narg model, Cmd.none)
+            ( replaceArgument narg model, Cmd.none )
+
+        DeleteScript ->
+            ( { model | deleteConfirm = Comp.YesNoDimmer.activate model.deleteConfirm }
+            , Cmd.none
+            )
+
+        DeleteScriptResp (Ok _) ->
+            ( model, Page.goto ListingPage )
+
+        DeleteScriptResp (Err err) ->
+            ( model, Cmd.none )
+
+        DeleteConfirmMsg lmsg ->
+            let
+                ( cm, flag ) =
+                    Comp.YesNoDimmer.update lmsg model.deleteConfirm
+
+                cmd =
+                    if flag then
+                        Api.deleteScript model.baseurl model.scriptName DeleteScriptResp
+
+                    else
+                        Cmd.none
+            in
+            ( { model | deleteConfirm = cm }
+            , cmd
+            )

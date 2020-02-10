@@ -31,6 +31,13 @@ paths:
         required: true
         schema:
           type: string
+    delete:
+      summary: Delete a script file.
+      description: |
+        Deletes the file on the server.
+      responses:
+        200:
+          description: Ok
     put:
       summary: Upload a script file.
       description: |
