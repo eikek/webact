@@ -4,15 +4,21 @@ object Dependencies {
 
   val CirceVersion = "0.13.0"
   val FastparseVersion = "2.2.4"
+  val Fs2Version = "2.2.2"
   val Http4sVersion = "0.21.0"
+  val KindProjectorVersion = "0.10.3"
   val LogbackVersion = "1.2.3"
   val YamuscaVersion = "0.6.1"
   val betterMonadicForVersion = "0.3.1"
   val dnsJavaVersion = "2.1.9"
   val javaxMailVersion = "1.6.2"
-  val KindProjectorVersion = "0.10.3"
   val miniTestVersion = "2.7.0"
   val pureConfigVersion = "0.12.2"
+
+  val fs2 = Seq(
+    "co.fs2" %% "fs2-core" % Fs2Version,
+    "co.fs2" %% "fs2-io" % Fs2Version
+  )
 
   val http4s = Seq(
     "org.http4s" %% "http4s-blaze-server" % Http4sVersion,

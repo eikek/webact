@@ -11,18 +11,23 @@ import org.slf4j._
 import fastparse._
 import NoWhitespace._
 
-
 // Thu,Fri 2012-*-1,5 11:12:13
-case class TimerCal(dow: List[DayOfWeek],
-  year: List[Int], month: List[Int], day: List[Int],
-  hour: List[Int], minute: List[Int]) {
+case class TimerCal(
+    dow: List[DayOfWeek],
+    year: List[Int],
+    month: List[Int],
+    day: List[Int],
+    hour: List[Int],
+    minute: List[Int]
+) {
 
   lazy val asString: String = {
-    def str(l: List[Int], s: Int = 2) = if (l.isEmpty) "*" else l.map(n => (s"%0${s}d").format(n)).mkString(",")
+    def str(l: List[Int], s: Int = 2) =
+      if (l.isEmpty) "*" else l.map(n => (s"%0${s}d").format(n)).mkString(",")
     val days =
       if (dow.isEmpty) ""
       else dow.map(_.getDisplayName(format.TextStyle.SHORT, Locale.ROOT)).mkString(",") + " "
-    days + str(year, 4) +"-"+ str(month) +"-"+ str(day) +" "+ str(hour) +":"+ str(minute)
+    days + str(year, 4) + "-" + str(month) + "-" + str(day) + " " + str(hour) + ":" + str(minute)
   }
 
   def triggeredNow = triggered(LocalDateTime.now)
@@ -40,22 +45,22 @@ case class TimerCal(dow: List[DayOfWeek],
 
   def nextTimers(startYear: Int): LazyList[LocalDateTime] = {
     val comb = for {
-      y <- if (year.isEmpty) LazyList.from(startYear) else year.to(LazyList)
-      m <- if (month.isEmpty) (1 to 12) else month
-      d <- if (day.isEmpty) (1 to 31) else day
-      h <- if (hour.isEmpty) (0 to 59) else hour
+      y   <- if (year.isEmpty) LazyList.from(startYear) else year.to(LazyList)
+      m   <- if (month.isEmpty) (1 to 12) else month
+      d   <- if (day.isEmpty) (1 to 31) else day
+      h   <- if (hour.isEmpty) (0 to 59) else hour
       min <- if (minute.isEmpty) (0 to 59) else minute
     } yield (y, m, d, h, min)
     //filter out invalid dates
     val dates = comb.flatMap({
-      case (y,m,d,h,min) => TimerCal.localDateTime(y,m,d,h,min).to(LazyList)
+      case (y, m, d, h, min) => TimerCal.localDateTime(y, m, d, h, min).to(LazyList)
     })
     if (dow.isEmpty) dates
     else dates.filter(ld => dow.contains(ld.getDayOfWeek))
   }
 
   def nextTrigger(ref: LocalDateTime): Option[LocalDateTime] =
-    nextTimers(ref.getYear).find(_ isAfter ref)
+    nextTimers(ref.getYear).find(_.isAfter(ref))
 }
 
 object TimerCal {
@@ -72,59 +77,81 @@ object TimerCal {
         P("Sat").map(_ => DayOfWeek.SATURDAY) |
         P("Sun").map(_ => DayOfWeek.SUNDAY)
 
-    def dows[_: P]: P[Seq[DayOfWeek]] = dow.rep(1, sep=",")
-    def yearSingle[_: P]: P[Int] = CharIn("0-9").rep(4).!.map(_.toInt)
-    def years[_: P]: P[Seq[Int]] = P(empty | yearSingle.rep(1, sep=","))
-    def two[_: P]: P[Int] = CharIn("0-9").rep(min=1, max=2).!.map(_.toInt)
-    def twos[_: P]: P[Seq[Int]] = P(empty | two.rep(1, sep=","))
+    def dows[_: P]: P[Seq[DayOfWeek]] = dow.rep(1, sep = ",")
+    def yearSingle[_: P]: P[Int]      = CharIn("0-9").rep(4).!.map(_.toInt)
+    def years[_: P]: P[Seq[Int]]      = P(empty | yearSingle.rep(1, sep = ","))
+    def two[_: P]: P[Int]             = CharIn("0-9").rep(min = 1, max = 2).!.map(_.toInt)
+    def twos[_: P]: P[Seq[Int]]       = P(empty | two.rep(1, sep = ","))
 
-    def offset[_: P]: P[Duration] = P("+" ~ P(CharIn("0-9").rep.!).map(_.toInt) ~ P("min"|"h"|"d"|"m").!).map {
-      case (num, unit) => unit.toLowerCase match {
-        case "h" => Duration.ofHours(num.toLong)
-        case "d" => Duration.ofDays(num.toLong)
-        case "min" => Duration.ofMinutes(num.toLong)
-        case _ => Duration.ofMinutes(num.toLong)
+    def offset[_: P]: P[Duration] =
+      P("+" ~ P(CharIn("0-9").rep.!).map(_.toInt) ~ P("min" | "h" | "d" | "m").!).map {
+        case (num, unit) =>
+          unit.toLowerCase match {
+            case "h"   => Duration.ofHours(num.toLong)
+            case "d"   => Duration.ofDays(num.toLong)
+            case "min" => Duration.ofMinutes(num.toLong)
+            case _     => Duration.ofMinutes(num.toLong)
+          }
       }
-    }
     def offsetTimer[_: P]: P[TimerCal] = offset.map { duration =>
       val now = LocalDateTime.now.plus(duration)
-      TimerCal(Nil, List(now.getYear),
+      TimerCal(
+        Nil,
+        List(now.getYear),
         List(now.getMonthValue),
         List(now.getDayOfMonth),
         List(now.getHour),
-        List(now.getMinute))
+        List(now.getMinute)
+      )
     }
 
-    def stdTimer[_: P]: P[TimerCal] = P((dows ~" ").? ~ years ~ "-" ~ twos ~"-"~ twos ~" "~ twos ~":"~ twos).map {
-      case (w, y, m, d, h, min) => TimerCal(
-        w.map(_.toList.sorted).getOrElse(Nil),
-        y.toList.sorted, m.toList.sorted, d.toList.sorted,
-        h.toList.sorted, min.toList.sorted)
-    }
+    def stdTimer[_: P]: P[TimerCal] =
+      P((dows ~ " ").? ~ years ~ "-" ~ twos ~ "-" ~ twos ~ " " ~ twos ~ ":" ~ twos).map {
+        case (w, y, m, d, h, min) =>
+          TimerCal(
+            w.map(_.toList.sorted).getOrElse(Nil),
+            y.toList.sorted,
+            m.toList.sorted,
+            d.toList.sorted,
+            h.toList.sorted,
+            min.toList.sorted
+          )
+      }
     def timer[_: P]: P[TimerCal] = offsetTimer | stdTimer
   }
 
   def parseTimer(s: String): Either[String, TimerCal] = parse(s, Parser.timer(_)) match {
     case Parsed.Success(c, _) => Right(c)
-    case f@Parsed.Failure(_, _, _) =>
+    case f @ Parsed.Failure(_, _, _) =>
       val trace = f.trace()
       Left(s"Cannot parse timer string '$s' at index ${trace.index}: ${trace.msg}")
   }
 
   def nextTrigger[F[_]: Sync](timer: String): F[Option[FiniteDuration]] =
-    Fs2Stream.emit(timer).
-      filter(_.trim.nonEmpty).
-      map(parseTimer).
-      evalTap(e => Sync[F].delay{
-        e.left.foreach(err => logger.warn(s"Cannot parse schedule string: $err"))
-      }).
-      flatMap(_.fold(_ => Fs2Stream.empty, e => Fs2Stream.emit(e))).
-      map(t => t.nextTrigger(LocalDateTime.now)).unNoneTerminate.
-      map(fd => Duration.between(LocalDateTime.now, fd)).
-      map(fd => FiniteDuration(fd.toNanos, TimeUnit.NANOSECONDS)).
-      compile.last
+    Fs2Stream
+      .emit(timer)
+      .filter(_.trim.nonEmpty)
+      .map(parseTimer)
+      .evalTap(e =>
+        Sync[F].delay {
+          e.left.foreach(err => logger.warn(s"Cannot parse schedule string: $err"))
+        }
+      )
+      .flatMap(_.fold(_ => Fs2Stream.empty, e => Fs2Stream.emit(e)))
+      .map(t => t.nextTrigger(LocalDateTime.now))
+      .unNoneTerminate
+      .map(fd => Duration.between(LocalDateTime.now, fd))
+      .map(fd => FiniteDuration(fd.toNanos, TimeUnit.NANOSECONDS))
+      .compile
+      .last
 
-  def localDateTime(year: Int, month: Int, day: Int, hour: Int, minute: Int): Option[LocalDateTime] =
+  def localDateTime(
+      year: Int,
+      month: Int,
+      day: Int,
+      hour: Int,
+      minute: Int
+  ): Option[LocalDateTime] =
     Either.catchOnly[DateTimeException](LocalDateTime.of(year, month, day, hour, minute)).toOption
 
   lazy val always = TimerCal.parseTimer("*-*-* *:*")

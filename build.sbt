@@ -91,6 +91,7 @@ lazy val root = (project in file(".")).
     name := "webact",
     description := "Execute and manage scripts from the web",
     libraryDependencies ++= Dependencies.http4s ++
+      Dependencies.fs2 ++
       Dependencies.circe ++
       Dependencies.fastparse ++
       Dependencies.javaxMail ++
@@ -154,3 +155,8 @@ def createWebjarSource(wj: Seq[ModuleID], out: File): Seq[File] = {
   IO.write(target, content)
   Seq(target)
 }
+
+addCommandAlias("make", ";root/openapiCodegen ;root/test:compile")
+addCommandAlias("make-zip", ";root/universal:packageBin")
+addCommandAlias("make-deb", ";root/debian:packageBin")
+addCommandAlias("make-pkg", ";clean ;make ;make-zip ;make-deb")

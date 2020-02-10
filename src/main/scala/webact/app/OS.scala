@@ -25,43 +25,47 @@ object OS {
     val meta = readMeta(script).set(Key.Name, script.getFileName.toString)
     if (meta.get(Key.Enabled).exists(_.equalsIgnoreCase("true"))) {
       val tmpDir = Files.createDirectories(cfg.tmpDir.resolve(script.getFileName))
-      val out = tmpDir.resolve("stdout.txt").toAbsolutePath.normalize
+      val out    = tmpDir.resolve("stdout.txt").toAbsolutePath.normalize
       Files.deleteIfExists(out)
       val err = tmpDir.resolve("stderr.txt").toAbsolutePath.normalize
       Files.deleteIfExists(err)
-      val runjson = tmpDir.resolve("run.json").toAbsolutePath.normalize
+      val runjson     = tmpDir.resolve("run.json").toAbsolutePath.normalize
       val existingRun = readRunjson(runjson)
 
       logger.info(s"Executing $script in WD ${cfg.tmpDir}!")
-      val inheritedPath = Option(System.getenv("PATH")).
-        filter(_ => cfg.inheritPath).
-        toSeq
+      val inheritedPath = Option(System.getenv("PATH")).filter(_ => cfg.inheritPath).toSeq
       val env = cfg.env.updated(
-        "PATH", (inheritedPath ++ cfg.extraPath ++ Seq(cfg.scriptDir.toString)).mkString(pathSep)
+        "PATH",
+        (inheritedPath ++ cfg.extraPath ++ Seq(cfg.scriptDir.toString)).mkString(pathSep)
       )
       logger.debug(s"Environment: $env")
       val started = Instant.now
-      val proc = Process(Seq(script.toString) ++ args.map(_.toAbsolutePath.normalize.toString)
-        , Some(tmpDir.toFile)
-        , env.toSeq: _*
+      val proc = Process(
+        Seq(script.toString) ++ args.map(_.toAbsolutePath.normalize.toString),
+        Some(tmpDir.toFile),
+        env.toSeq: _*
       )
       val procLogger = new ProcLogger(out, err)
       val output = Try(proc ! procLogger) match {
         case Success(rc) =>
-          val successCodes = meta.get(Key.SuccessCode).
-            map(_.trim).filter(_.nonEmpty).
-            flatMap(s => Try(s.toInt).toOption).
-            toSet
+          val successCodes = meta
+            .get(Key.SuccessCode)
+            .map(_.trim)
+            .filter(_.nonEmpty)
+            .flatMap(s => Try(s.toInt).toOption)
+            .toSet
           logger.debug(s"Got success codes: $successCodes")
           val rcSuccess = successCodes.contains(rc) || (successCodes.isEmpty && rc == 0)
-          val output = Output(started
-            , Duration.between(started, Instant.now)
-            , rc
-            , rcSuccess
-            , 1
-            , if (rcSuccess) 1 else 0
-            , out, err).
-            updateCounter(existingRun)
+          val output = Output(
+            started,
+            Duration.between(started, Instant.now),
+            rc,
+            rcSuccess,
+            1,
+            if (rcSuccess) 1 else 0,
+            out,
+            err
+          ).updateCounter(existingRun)
           if (output.success) logger.info(s"Script $script run successful: $rc")
           else logger.error(s"Script $script returned with unsuccessful return code: $rc")
           output
@@ -69,8 +73,16 @@ object OS {
           val sw = new StringWriter()
           ex.printStackTrace(new java.io.PrintWriter(sw))
           procLogger.err(sw.toString)
-          Output(started, Duration.between(started, Instant.now), Int.MinValue, false, 1, 0, out, err).
-            updateCounter(existingRun)
+          Output(
+            started,
+            Duration.between(started, Instant.now),
+            Int.MinValue,
+            false,
+            1,
+            0,
+            out,
+            err
+          ).updateCounter(existingRun)
       }
 
       writeRunjson(output, runjson)
@@ -83,7 +95,7 @@ object OS {
   }
 
   def findOutput(name: String, cfg: Config): Option[Output] = {
-    val meta = cfg.tmpDir/name/"run.json"
+    val meta = cfg.tmpDir / name / "run.json"
     if (meta.exists) readRunjson(meta)
     else None
   }
@@ -95,22 +107,20 @@ object OS {
     val name = meta.getHead(Key.Name).getOrElse("<unknown>")
     val recipients =
       (meta.get(Key.NotifyErrorMail).filter(_ => output.failure) ++
-        meta.get(Key.NotifyMail)).
-        map(_.trim).filter(_.nonEmpty).
-        map(s => MailSender.Mail(s))
+        meta.get(Key.NotifyMail)).map(_.trim).filter(_.nonEmpty).map(s => MailSender.Mail(s))
     logger.debug(s"Got $recipients recipients to notify.")
 
     if (recipients.nonEmpty) {
       val subject = meta.getHeadOr(Key.NotifySubject, s"[${cfg.appName}] Run ${name}") match {
-        case s => s +  (if (output.failure) ": FAILED" else "")
+        case s => s + (if (output.failure) ": FAILED" else "")
       }
       val text = {
         if (output.success) read(output.stdout)
         else {
           "--- stdout ---\n\n" +
-          read(output.stdout) +
-          "\n\n--- stderr ---\n\n" +
-          read(output.stderr)
+            read(output.stdout) +
+            "\n\n--- stderr ---\n\n" +
+            read(output.stderr)
         }
       }
       val msg = MailSender.Message(
@@ -138,11 +148,11 @@ object OS {
 
   private def readRunjson(file: Path): Option[Output] =
     if (Files.exists(file)) {
-      parse(new String(Files.readAllBytes(file))).
-        getOrElse(Json.Null).
-        as[Output].
-        map(Some(_)).
-        getOrElse({
+      parse(new String(Files.readAllBytes(file)))
+        .getOrElse(Json.Null)
+        .as[Output]
+        .map(Some(_))
+        .getOrElse({
           logger.warn(s"Cannot read meta.json: $file!")
           None
         })

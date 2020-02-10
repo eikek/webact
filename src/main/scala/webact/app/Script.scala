@@ -20,20 +20,27 @@ case class Script[F[_]](content: Stream[F, Byte], meta: MetaHeader) {
 
 object Script {
 
-  def fromFile[F[_]: Sync](file: Path, blocker: Blocker)(implicit C: ContextShift[F]): F[Script[F]] =
-    fromBytes(fs2.io.file.readAll(file, blocker, 64 * 1024)).
-      map(_.update(MetaHeader(
-        Key.Name -> file.getFileName.toString,
-        Key.Size -> Files.size(file).toString,
-        Key.LastMod -> Files.getLastModifiedTime(file).toInstant.toEpochMilli.toString
-      )))
+  def fromFile[F[_]: Sync](file: Path, blocker: Blocker)(
+      implicit C: ContextShift[F]
+  ): F[Script[F]] =
+    fromBytes(fs2.io.file.readAll(file, blocker, 64 * 1024)).map(
+      _.update(
+        MetaHeader(
+          Key.Name    -> file.getFileName.toString,
+          Key.Size    -> Files.size(file).toString,
+          Key.LastMod -> Files.getLastModifiedTime(file).toInstant.toEpochMilli.toString
+        )
+      )
+    )
 
   def fromBytes[F[_]: Sync](bytes: Stream[F, Byte]): F[Script[F]] = {
     val content = bytes
-    val meta = bytes.take(64 * 1024).
-      through(fs2.text.utf8Decode).
-      compile.lastOrError.
-      map(MetaParser.parseMeta)
+    val meta = bytes
+      .take(64 * 1024)
+      .through(fs2.text.utf8Decode)
+      .compile
+      .lastOrError
+      .map(MetaParser.parseMeta)
     meta.map(m => Script(content, m))
   }
 

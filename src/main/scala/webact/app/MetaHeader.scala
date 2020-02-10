@@ -25,18 +25,17 @@ object MetaHeader {
 
   def apply(v: (Key, String)*): MetaHeader =
     MetaHeader(
-      v.groupBy(_._1).
-        map({ case (k, vp) => (k -> vp.map(_._2).toList) })
+      v.groupBy(_._1).map({ case (k, vp) => (k -> vp.map(_._2).toList) })
     )
 
   def from(values: Seq[(String, String)]): MetaHeader =
     MetaHeader(
-      values.groupBy(_._1).
-        flatMap({ case (k, v) =>
-          Key.from(k).
-            map(key => List((key -> v.map(_._2).toList))).
-            getOrElse(Nil)
-        }).
-        toMap
+      values
+        .groupBy(_._1)
+        .flatMap({
+          case (k, v) =>
+            Key.from(k).map(key => List((key -> v.map(_._2).toList))).getOrElse(Nil)
+        })
+        .toMap
     )
 }

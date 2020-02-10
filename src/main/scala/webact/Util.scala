@@ -12,10 +12,10 @@ object Util {
       Option(ref.get) match {
         case Some(a) => a.pure[F]
         case None =>
-          fa.map(a => {
+          fa.map { a =>
             ref.set(a)
             a
-          })
+          }
       }
     }
   }

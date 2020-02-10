@@ -13,7 +13,11 @@ trait ScriptApp[F[_]] {
 
   def store(name: String, bytes: Stream[F, Byte]): F[Unit]
 
-  def execute(name: String, args: Seq[Path], deletArgsAfterRun: Boolean): F[F[Option[(Script[F], Output)]]]
+  def execute(
+      name: String,
+      args: Seq[Path],
+      deletArgsAfterRun: Boolean
+  ): F[F[Option[(Script[F], Output)]]]
 
   def isExecuting(name: String): F[Option[Instant]]
 

@@ -14,23 +14,23 @@ object Param {
     def name: String = productPrefix
   }
   object Format {
-    case object Line extends Format
-    case object Text extends Format
+    case object Line     extends Format
+    case object Text     extends Format
     case object Password extends Format
-    case object File extends Format
-    case object Files extends Format
+    case object File     extends Format
+    case object Files    extends Format
   }
 
   object Parser {
 
     def format[_: P]: P[Format] =
       StringInIgnoreCase("line", "text", "password", "file", "files").!.map(_.toLowerCase).map {
-        case "line" => Format.Line
-        case "text" => Format.Text
+        case "line"     => Format.Line
+        case "text"     => Format.Text
         case "password" => Format.Password
-        case "file" => Format.File
-        case "files" => Format.Files
-        case _ => Format.Line
+        case "file"     => Format.File
+        case "files"    => Format.Files
+        case _          => Format.Line
       }
 
     def nameFormat[_: P]: P[Param] =
@@ -48,7 +48,7 @@ object Param {
   def fromString(str: String): Either[String, Param] =
     parse(str, Parser.param(_)) match {
       case Parsed.Success(v, _) => Right(v)
-      case f@Parsed.Failure(a, b ,c) =>
+      case f @ Parsed.Failure(a, b, c) =>
         val trace = f.trace()
         Left(s"Cannot parse param description at index ${trace.index}: ${trace.msg}")
     }

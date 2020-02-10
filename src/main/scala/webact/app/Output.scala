@@ -7,14 +7,16 @@ import io.circe.generic.semiauto._
 
 import JsonCodecs._
 
-case class Output(runAt: Instant
-  , runTime: Duration
-  , returnCode: Int
-  , success: Boolean
-  , runCount: Int
-  , runSuccess: Int
-  , stdout: Path
-  , stderr: Path) {
+case class Output(
+    runAt: Instant,
+    runTime: Duration,
+    returnCode: Int,
+    success: Boolean,
+    runCount: Int,
+    runSuccess: Int,
+    stdout: Path,
+    stderr: Path
+) {
 
   def updateCounter(other: Output): Output =
     copy(runCount = runCount + other.runCount, runSuccess = runSuccess + other.runSuccess)

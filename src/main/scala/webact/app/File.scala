@@ -47,8 +47,8 @@ object File {
       appendContent(cnt.asJson.noSpaces.getBytes(defaultCharset))
 
     def sha256[F[_]: Sync]: F[String] = Sync[F].delay {
-      val md = java.security.MessageDigest.getInstance("SHA-256")
-      val in = new java.security.DigestInputStream(Files.newInputStream(p), md)
+      val md   = java.security.MessageDigest.getInstance("SHA-256")
+      val in   = new java.security.DigestInputStream(Files.newInputStream(p), md)
       val buff = new Array[Byte](64 * 1024)
       while (in.read(buff) != -1) {}
       val sb = new StringBuilder
@@ -67,8 +67,9 @@ object File {
 
     def listFiles[F[_]: Sync]: Stream[F, Path] =
       if (exists) {
-        Stream.bracket(Sync[F].delay(Files.list(p)))(s => Sync[F].delay(s.close)).
-          flatMap(s => Stream.fromIterator(s.iterator.asScala))
+        Stream
+          .bracket(Sync[F].delay(Files.list(p)))(s => Sync[F].delay(s.close))
+          .flatMap(s => Stream.fromIterator(s.iterator.asScala))
       } else {
         Stream.empty
       }

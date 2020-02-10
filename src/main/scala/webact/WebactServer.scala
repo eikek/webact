@@ -13,18 +13,21 @@ import webact.app._
 
 object WebactServer {
 
-  def stream[F[_]: ConcurrentEffect](cfg: Config, blocker: Blocker)
-    (implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
+  def stream[F[_]: ConcurrentEffect](
+      cfg: Config,
+      blocker: Blocker
+  )(implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
     val app = for {
-      scriptApp  <- ScriptAppImpl.create[F](cfg, blocker)
-      _          <- scriptApp.init
-      _          <- scriptApp.startMonitoring
+      scriptApp <- ScriptAppImpl.create[F](cfg, blocker)
+      _         <- scriptApp.init
+      _         <- scriptApp.startMonitoring
 
       httpApp = Router(
         "/api/info" -> InfoRoutes.infoRoutes(cfg),
-        "/api/v1" -> (ScriptJsonRoutes.routes[F](scriptApp, blocker, cfg) <+> ScriptDataRoutes.routes[F](scriptApp, blocker, cfg)),
+        "/api/v1" -> (ScriptJsonRoutes.routes[F](scriptApp, blocker, cfg) <+> ScriptDataRoutes
+          .routes[F](scriptApp, blocker, cfg)),
         "/app/assets" -> WebjarRoutes.appRoutes[F](blocker, cfg),
-        "/app" -> TemplateRoutes.indexRoutes[F](blocker, cfg)
+        "/app"        -> TemplateRoutes.indexRoutes[F](blocker, cfg)
       ).orNotFound
 
       // With Middlewares in place
@@ -32,13 +35,14 @@ object WebactServer {
 
     } yield finalHttpApp
 
-
-    Stream.eval(app).flatMap(httpApp =>
-      BlazeServerBuilder[F]
-        .bindHttp(cfg.bind.port, cfg.bind.host)
-        .withHttpApp(httpApp)
-        .serve
-    )
+    Stream
+      .eval(app)
+      .flatMap(httpApp =>
+        BlazeServerBuilder[F]
+          .bindHttp(cfg.bind.port, cfg.bind.host)
+          .withHttpApp(httpApp)
+          .serve
+      )
 
   }.drain
 }
