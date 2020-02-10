@@ -1,13 +1,15 @@
 module Data.RunningInfo exposing (..)
 
-import Json.Decode as Decode exposing (Decoder, int, string, float, bool)
-import Json.Decode.Pipeline exposing (required, optional, hardcoded)
+import Json.Decode as Decode exposing (Decoder, int)
+import Json.Decode.Pipeline exposing (required)
+
 
 type alias RunningInfo =
-    { executing: Int
+    { executing : Int
     }
 
-runningInfoDecoder: Decoder RunningInfo
+
+runningInfoDecoder : Decoder RunningInfo
 runningInfoDecoder =
     Decode.succeed RunningInfo
         |> required "executing" int

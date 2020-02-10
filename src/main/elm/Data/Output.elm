@@ -1,18 +1,20 @@
 module Data.Output exposing (..)
 
-import Json.Decode as Decode exposing (Decoder, int, string, float, bool)
-import Json.Decode.Pipeline exposing (required, optional, hardcoded)
+import Json.Decode as Decode exposing (Decoder, bool, float, int, string)
+import Json.Decode.Pipeline exposing (hardcoded, optional, required)
+
 
 type alias Output =
-    { date: String
-    , returnCode: Int
-    , success: Bool
-    , runningTime: Int
-    , runCount: Int
-    , runSuccess: Int
+    { date : String
+    , returnCode : Int
+    , success : Bool
+    , runningTime : Int
+    , runCount : Int
+    , runSuccess : Int
     }
 
-outputDecoder: Decoder Output
+
+outputDecoder : Decoder Output
 outputDecoder =
     Decode.succeed Output
         |> required "date" string
@@ -22,6 +24,7 @@ outputDecoder =
         |> required "runCount" int
         |> required "runSuccess" int
 
-outputListDecoder: Decoder (List Output)
+
+outputListDecoder : Decoder (List Output)
 outputListDecoder =
     Decode.list outputDecoder

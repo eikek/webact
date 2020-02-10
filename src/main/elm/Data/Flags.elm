@@ -1,6 +1,7 @@
 module Data.Flags exposing (..)
 
+
 type alias Flags =
-    { appName: String
-    , apiBase: String
+    { appName : String
+    , apiBase : String
     }

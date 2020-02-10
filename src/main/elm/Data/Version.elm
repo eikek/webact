@@ -1,17 +1,19 @@
 module Data.Version exposing (..)
 
-import Json.Decode as Decode exposing (Decoder, int, string, float, bool)
-import Json.Decode.Pipeline exposing (required, optional, hardcoded)
+import Json.Decode as Decode exposing (Decoder, int, string)
+import Json.Decode.Pipeline exposing (required)
+
 
 type alias Version =
-    { version: String
-    , builtAtMillis: Int
-    , builtAtString: String
-    , gitCommit: String
-    , gitVersion: String
+    { version : String
+    , builtAtMillis : Int
+    , builtAtString : String
+    , gitCommit : String
+    , gitVersion : String
     }
 
-empty: Version
+
+empty : Version
 empty =
     { version = "<unknown>"
     , builtAtMillis = 0
@@ -21,7 +23,7 @@ empty =
     }
 
 
-versionDecoder: Decoder Version
+versionDecoder : Decoder Version
 versionDecoder =
     Decode.succeed Version
         |> required "version" string
