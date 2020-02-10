@@ -5,17 +5,16 @@ import org.http4s._
 import org.http4s.HttpRoutes
 import org.http4s.server.staticcontent.webjarService
 import org.http4s.server.staticcontent.WebjarService.{WebjarAsset, Config => WebjarConfig}
-import scala.concurrent.ExecutionContext
 
 import webact.config._
 
 object WebjarRoutes {
 
-  def appRoutes[F[_]: Effect](blockingEc: ExecutionContext, cfg: Config)(implicit C: ContextShift[F]): HttpRoutes[F] = {
+  def appRoutes[F[_]: Effect](blocker: Blocker, cfg: Config)(implicit C: ContextShift[F]): HttpRoutes[F] = {
     webjarService(
       WebjarConfig(
         filter = assetFilter,
-        blockingExecutionContext = blockingEc
+        blocker = blocker
       )
     )
   }

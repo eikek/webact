@@ -7,7 +7,6 @@ import org.http4s.headers._
 import org.http4s.HttpRoutes
 import org.http4s.dsl.Http4sDsl
 import org.http4s.circe.CirceEntityEncoder._
-import scala.concurrent.ExecutionContext
 import java.time._
 
 import webact.app._
@@ -18,7 +17,7 @@ object ScriptJsonRoutes {
   val `text/plain` = new MediaType("text", "plain")
   val noCache = `Cache-Control`(CacheDirective.`no-cache`())
 
-  def routes[F[_]: Sync](S: ScriptApp[F], blockingEc: ExecutionContext, cfg: Config): HttpRoutes[F] = {
+  def routes[F[_]: Sync](S: ScriptApp[F], blocker: Blocker, cfg: Config): HttpRoutes[F] = {
     val dsl = new Http4sDsl[F]{}
     import dsl._
     HttpRoutes.of[F] {

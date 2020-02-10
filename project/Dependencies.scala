@@ -2,15 +2,17 @@ import sbt._
 
 object Dependencies {
 
-  val Http4sVersion = "0.20.1"
-  val CirceVersion = "0.11.1"
+  val CirceVersion = "0.13.0"
+  val FastparseVersion = "2.2.4"
+  val Http4sVersion = "0.21.0"
   val LogbackVersion = "1.2.3"
-  val pureConfigVersion = "0.11.0"
-  val miniTestVersion = "2.4.0"
-  val kindProjectorVersion = "0.9.10"
-  val betterMonadicForVersion = "0.3.0"
-  val javaxMailVersion = "1.6.2"
+  val YamuscaVersion = "0.6.1"
+  val betterMonadicForVersion = "0.3.1"
   val dnsJavaVersion = "2.1.9"
+  val javaxMailVersion = "1.6.2"
+  val KindProjectorVersion = "0.10.3"
+  val miniTestVersion = "2.7.0"
+  val pureConfigVersion = "0.12.2"
 
   val http4s = Seq(
     "org.http4s" %% "http4s-blaze-server" % Http4sVersion,
@@ -34,7 +36,7 @@ object Dependencies {
   )
 
   val fastparse = Seq(
-    "com.lihaoyi" %% "fastparse" % "2.1.2"
+    "com.lihaoyi" %% "fastparse" % FastparseVersion
   )
 
   val javaxMail = Seq(
@@ -44,14 +46,14 @@ object Dependencies {
   )
 
   val yamusca = Seq(
-    "com.github.eikek" %% "yamusca-core" % "0.5.1"
+    "com.github.eikek" %% "yamusca-core" % YamuscaVersion
   )
 
   val webjars = Seq(
-    "swagger-ui" -> "3.22.2",
+    "swagger-ui" -> "3.24.3",
     "Semantic-UI" -> "2.4.1",
     "jquery" -> "3.4.1",
-    "highlightjs" -> "9.8.0"
+    "highlightjs" -> "9.15.10"
   ).map({case (a, v) => "org.webjars" % a % v })
 
   val testing = Seq(
@@ -61,6 +63,6 @@ object Dependencies {
     "io.monix" %% "minitest-laws" % miniTestVersion
   ).map(_ % Test)
 
-  val kindProjectorPlugin = "org.spire-math" %% "kind-projector" % kindProjectorVersion
+  val kindProjectorPlugin = "org.typelevel" %% "kind-projector"     % KindProjectorVersion
   val betterMonadicFor = "com.olegpy" %% "better-monadic-for" % betterMonadicForVersion
 }

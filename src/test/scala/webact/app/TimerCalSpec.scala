@@ -7,27 +7,27 @@ object TimerCalSpec extends SimpleTestSuite {
 
   test("timer parse") {
     assertEquals(
-      TimerCal.parseTimer("Mon *-*-* 12:00").right.get,
+      TimerCal.parseTimer("Mon *-*-* 12:00").toOption.get,
       TimerCal(List(DayOfWeek.MONDAY), Nil, Nil, Nil, List(12), List(0)))
     assertEquals(
-      TimerCal.parseTimer("2016-*-* 7:0").right.get,
+      TimerCal.parseTimer("2016-*-* 7:0").toOption.get,
       TimerCal(Nil, List(2016), Nil, Nil, List(7), List(0)))
     assertEquals(
-      TimerCal.parseTimer("2016-*-* 7,8,12:0").right.get,
+      TimerCal.parseTimer("2016-*-* 7,8,12:0").toOption.get,
       TimerCal(Nil, List(2016), Nil, Nil, List(7,8,12), List(0)))
   }
 
   test("timer render") {
     assertEquals(
-      TimerCal.parseTimer("Mon,Wed *-*-* 12:0").right.get.asString,
+      TimerCal.parseTimer("Mon,Wed *-*-* 12:0").toOption.get.asString,
       "Mon,Wed *-*-* 12:00")
     assertEquals(
-      TimerCal.parseTimer("2016-*-* 7:0").right.get.asString,
+      TimerCal.parseTimer("2016-*-* 7:0").toOption.get.asString,
       "2016-*-* 07:00")
   }
 
   test("calc next date") {
-    val t1 = TimerCal.parseTimer("2016-*-* 08:0,15").right.get
+    val t1 = TimerCal.parseTimer("2016-*-* 08:0,15").toOption.get
     assertEquals(
       t1.nextTrigger(ldt(2016, 11, 22, 8, 10)),
       Some(ldt(2016, 11, 22, 8, 15))
@@ -38,10 +38,10 @@ object TimerCalSpec extends SimpleTestSuite {
     )
     assertEquals(t1.nextTrigger(ldt(2016, 12, 31, 9, 30)), None)
 
-    val t2 = TimerCal.parseTimer("*-10-* 8,10:0,15").right.get
+    val t2 = TimerCal.parseTimer("*-10-* 8,10:0,15").toOption.get
     assertEquals(t2.nextTrigger(ldt(2016,10,31,11,0)), Some(ldt(2017,10,1,8,0)))
 
-    val t3 = TimerCal.parseTimer("Mon,Thu *-*-* 10:0").right.get
+    val t3 = TimerCal.parseTimer("Mon,Thu *-*-* 10:0").toOption.get
     assertEquals(
       t3.nextTrigger(ldt(2016,11,26,21,50)),
       Some(ldt(2016,11,28,10,0)))

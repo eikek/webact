@@ -11,7 +11,6 @@ import org.http4s._
 import org.http4s.headers._
 import org.http4s.multipart._
 import java.nio.file.Path
-import scala.concurrent.ExecutionContext
 import org.slf4j._
 
 import webact.config._
@@ -23,10 +22,10 @@ object RequestArguments {
   def apply[F[_]: Sync](script: String
     , req: Request[F]
     , cfg: Config
-    , blockingEc: ExecutionContext)(implicit C: ContextShift[F]): F[Seq[Path]] = {
+    , blocker: Blocker)(implicit C: ContextShift[F]): F[Seq[Path]] = {
     req.attemptAs[Multipart[F]].fold(
-      _ => fromBody(script, req, cfg, blockingEc),
-      mp => fromMultipart(script, mp, req, cfg, blockingEc)).
+      _ => fromBody(script, req, cfg, blocker),
+      mp => fromMultipart(script, mp, req, cfg, blocker)).
       flatMap(identity)
   }
 
@@ -34,19 +33,19 @@ object RequestArguments {
     , mp: Multipart[F]
     , req: Request[F]
     , cfg: Config
-    , blockingEc: ExecutionContext)(implicit C: ContextShift[F]): F[Seq[Path]] = {
+    , blocker: Blocker)(implicit C: ContextShift[F]): F[Seq[Path]] = {
     for {
       _     <- Sync[F].delay(logger.info(s"Creating arguments from multipart request for script $script"))
       dir   <- (cfg.tmpDir / script).mkdirs
       reqf  <- requestFile(req, dir)
-      pfs   <- Traverse[Vector].sequence(mp.parts.map(p => makeFile(p.body, p.name, dir, blockingEc)))
+      pfs   <- Traverse[Vector].sequence(mp.parts.map(p => makeFile(p.body, p.name, dir, blocker)))
     } yield Seq(reqf) ++ pfs
   }
 
   def fromBody[F[_]: Sync](script: String
     , req: Request[F]
     , cfg: Config
-    , blockingEc: ExecutionContext)(implicit C: ContextShift[F]): F[Seq[Path]] = {
+    , blocker: Blocker)(implicit C: ContextShift[F]): F[Seq[Path]] = {
     val fname = req.headers.get(`Content-Disposition`).
       flatMap(cd => cd.parameters.get("filename"))
     for {
@@ -54,7 +53,7 @@ object RequestArguments {
       dir   <- (cfg.tmpDir / script).mkdirs
       reqf  <- requestFile(req, dir)
       body  <-
-        if (req.method == Method.POST) makeFile(req.body, fname, dir, blockingEc).map(Seq(_))
+        if (req.method == Method.POST) makeFile(req.body, fname, dir, blocker).map(Seq(_))
         else Seq.empty.pure[F]
     } yield Seq(reqf) ++ body
   }
@@ -70,11 +69,11 @@ object RequestArguments {
   private def makeFile[F[_]: Sync](bytes: Stream[F, Byte]
     , name: Option[String]
     , dir: Path
-    , blockingEc: ExecutionContext)(implicit C: ContextShift[F]): F[Path] = {
+    , blocker: Blocker)(implicit C: ContextShift[F]): F[Path] = {
     for {
       tmp   <- dir.newTempFile("arg-file-XXXXX", "out")
       _     <- Sync[F].delay(logger.debug(s"Make argument file $tmp"))
-      _     <- bytes.through(file.writeAll(tmp, blockingEc, Seq.empty)).compile.drain
+      _     <- bytes.through(file.writeAll(tmp, blocker, Seq.empty)).compile.drain
       f     <- makeFinalFile(tmp, dir, name)
     } yield f
   }

@@ -5,22 +5,19 @@ import com.typesafe.sbt.SbtGit.GitKeys._
 val sharedSettings = Seq(
   organization := "com.github.eikek",
   version := "0.4.0-SNAPSHOT",
-  scalaVersion := "2.12.8",
+  scalaVersion := "2.13.1",
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8",
     "-language:higherKinds",
     "-language:postfixOps",
     "-feature",
-    "-Ypartial-unification",
     "-Xfatal-warnings", // fail when there are warnings
     "-unchecked",
     "-Xlint",
-    "-Yno-adapted-args",
     "-Ywarn-dead-code",
     "-Ywarn-numeric-widen",
-    "-Ywarn-value-discard",
-    "-Ywarn-unused-import"
+    "-Ywarn-value-discard"
   ),
   scalacOptions in (Compile, console) := Seq()
 )
@@ -93,7 +90,6 @@ lazy val root = (project in file(".")).
   settings(
     name := "webact",
     description := "Execute and manage scripts from the web",
-    scalacOptions ++= Seq("-Ypartial-unification"),
     libraryDependencies ++= Dependencies.http4s ++
       Dependencies.circe ++
       Dependencies.fastparse ++

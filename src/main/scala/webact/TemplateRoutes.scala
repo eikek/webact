@@ -13,9 +13,9 @@ import _root_.io.circe.generic.semiauto._
 import _root_.io.circe.syntax._
 import yamusca.imports._
 import yamusca.implicits._
-import scala.concurrent.ExecutionContext
 import java.net.URL
 
+import webact.BuildInfo
 import webact.config._
 
 object TemplateRoutes {
@@ -23,9 +23,9 @@ object TemplateRoutes {
 
   val `text/html` = new MediaType("text", "html")
 
-  def indexRoutes[F[_]: Effect](blockingEc: ExecutionContext, cfg: Config)(implicit C: ContextShift[F]): HttpRoutes[F] = {
-    val indexTemplate = Util.memo(loadResource("/index.html").flatMap(loadTemplate(_, blockingEc)))
-    val docTemplate = Util.memo(loadResource("/doc.html").flatMap(loadTemplate(_, blockingEc)))
+  def indexRoutes[F[_]: Effect](blocker: Blocker, cfg: Config)(implicit C: ContextShift[F]): HttpRoutes[F] = {
+    val indexTemplate = Util.memo(loadResource("/index.html").flatMap(loadTemplate(_, blocker)))
+    val docTemplate = Util.memo(loadResource("/doc.html").flatMap(loadTemplate(_, blocker)))
 
     val dsl = new Http4sDsl[F]{}
     import dsl._
@@ -52,9 +52,9 @@ object TemplateRoutes {
     }
   }
 
-  def loadUrl[F[_]: Sync](url: URL, blockingEc: ExecutionContext)(implicit C: ContextShift[F]): F[String] =
+  def loadUrl[F[_]: Sync](url: URL, blocker: Blocker)(implicit C: ContextShift[F]): F[String] =
     Stream.bracket(Sync[F].delay(url.openStream))(in => Sync[F].delay(in.close)).
-      flatMap(in => io.readInputStream(in.pure[F], 64 * 1024, blockingEc, false)).
+      flatMap(in => io.readInputStream(in.pure[F], 64 * 1024, blocker, false)).
       through(text.utf8Decode).
       compile.fold("")(_ + _)
 
@@ -66,8 +66,8 @@ object TemplateRoutes {
       }
     }
 
-  def loadTemplate[F[_]: Sync](url: URL, blockingEc: ExecutionContext)(implicit C: ContextShift[F]): F[Template] = {
-    loadUrl[F](url, blockingEc).flatMap(s => parseTemplate(s)).
+  def loadTemplate[F[_]: Sync](url: URL, blocker: Blocker)(implicit C: ContextShift[F]): F[Template] = {
+    loadUrl[F](url, blocker).flatMap(s => parseTemplate(s)).
       map(t => {
         logger.info(s"Compiled template $url")
         t

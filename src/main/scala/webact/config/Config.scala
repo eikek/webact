@@ -39,6 +39,6 @@ object Config {
   case class Bind(host: String, port: Int)
 
   lazy val default: Config = {
-    loadConfigOrThrow[Config]("webact")
+    ConfigSource.default.at("webact").loadOrThrow[Config]
   }
 }

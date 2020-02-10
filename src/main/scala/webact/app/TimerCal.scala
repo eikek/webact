@@ -1,6 +1,6 @@
 package webact.app
 
-import fs2.{Stream =>Fs2Stream}
+import fs2.{Stream => Fs2Stream}
 import cats.effect.Sync
 import java.util.Locale
 import java.time._
@@ -38,9 +38,9 @@ case class TimerCal(dow: List[DayOfWeek],
     check(minute.map(_.toInt), now.getMinute)
   }
 
-  def nextTimers(startYear: Int): Stream[LocalDateTime] = {
+  def nextTimers(startYear: Int): LazyList[LocalDateTime] = {
     val comb = for {
-      y <- if (year.isEmpty) Stream.from(startYear) else year.toStream
+      y <- if (year.isEmpty) LazyList.from(startYear) else year.to(LazyList)
       m <- if (month.isEmpty) (1 to 12) else month
       d <- if (day.isEmpty) (1 to 31) else day
       h <- if (hour.isEmpty) (0 to 59) else hour
@@ -48,7 +48,7 @@ case class TimerCal(dow: List[DayOfWeek],
     } yield (y, m, d, h, min)
     //filter out invalid dates
     val dates = comb.flatMap({
-      case (y,m,d,h,min) => TimerCal.localDateTime(y,m,d,h,min).toStream
+      case (y,m,d,h,min) => TimerCal.localDateTime(y,m,d,h,min).to(LazyList)
     })
     if (dow.isEmpty) dates
     else dates.filter(ld => dow.contains(ld.getDayOfWeek))

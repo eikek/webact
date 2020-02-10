@@ -2,10 +2,9 @@ package webact.app
 
 import fs2._
 import cats.Applicative
-import cats.effect.{ContextShift, Sync}
+import cats.effect._
 import cats.implicits._
 import java.nio.file.{Files, Path}
-import scala.concurrent.ExecutionContext
 
 case class Script[F[_]](content: Stream[F, Byte], meta: MetaHeader) {
 
@@ -21,8 +20,8 @@ case class Script[F[_]](content: Stream[F, Byte], meta: MetaHeader) {
 
 object Script {
 
-  def fromFile[F[_]: Sync](file: Path, blockingEc: ExecutionContext)(implicit C: ContextShift[F]): F[Script[F]] =
-    fromBytes(fs2.io.file.readAll(file, blockingEc, 64 * 1024)).
+  def fromFile[F[_]: Sync](file: Path, blocker: Blocker)(implicit C: ContextShift[F]): F[Script[F]] =
+    fromBytes(fs2.io.file.readAll(file, blocker, 64 * 1024)).
       map(_.update(MetaHeader(
         Key.Name -> file.getFileName.toString,
         Key.Size -> Files.size(file).toString,

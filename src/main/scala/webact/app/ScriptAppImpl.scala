@@ -2,13 +2,12 @@ package webact.app
 
 import fs2._
 import fs2.io.Watcher._
-import cats.effect.{ContextShift, Timer, Sync, Concurrent}
+import cats.effect._
 import cats.effect.concurrent.Ref
 import cats.implicits._
 import cats.Traverse
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import java.nio.file.{Files, Path}
 import java.nio.file.StandardOpenOption._
 import java.nio.file.attribute.{PosixFilePermission => Perm}
@@ -19,7 +18,7 @@ import org.slf4j._
 import webact.config._
 import File._
 
-final class ScriptAppImpl[F[_]: Concurrent](cfg: Config, blockingEc: ExecutionContext, executing: Ref[F, Map[String, Instant]])
+final class ScriptAppImpl[F[_]: Concurrent](cfg: Config, blocker: Blocker, executing: Ref[F, Map[String, Instant]])
   (implicit C: ContextShift[F], T: Timer[F]) extends ScriptApp[F] {
 
   private[this] val logger = LoggerFactory.getLogger(getClass)
@@ -36,13 +35,13 @@ final class ScriptAppImpl[F[_]: Concurrent](cfg: Config, blockingEc: ExecutionCo
   def listAll: Stream[F, Script[F]] =
     cfg.scriptDir.listFiles.
       filter(f => !Files.isDirectory(f)).
-      evalMap(f => Script.fromFile(f, blockingEc))
+      evalMap(f => Script.fromFile(f, blocker))
 
   def find(name: String): F[Option[Script[F]]] = {
     val none: Option[Script[F]] = None
     Option(cfg.scriptDir.resolve(name)).
       filter(f => Files.exists(f)).
-      map(f => Script.fromFile(f, blockingEc)).
+      map(f => Script.fromFile(f, blocker)).
       map(sf => {
         logger.debug(s"Found script ${name} in ${cfg.scriptDir}")
         sf.map(Option(_))
@@ -58,7 +57,8 @@ final class ScriptAppImpl[F[_]: Concurrent](cfg: Config, blockingEc: ExecutionCo
     Sync[F].delay(logger.info(s"Storing new version of $name")) >>
     Script.fromBytes(bytes).
       flatMap(sc => (Stream.eval(Sync[F].delay(Files.createDirectories(file.getParent))) ++ sc.content.
-        through(fs2.io.file.writeAll(file, blockingEc, List(CREATE, WRITE, TRUNCATE_EXISTING))) ++
+        filter(_ != '\r').
+        through(fs2.io.file.writeAll(file, blocker, List(CREATE, WRITE, TRUNCATE_EXISTING))) ++
         Stream.eval(Sync[F].delay(Files.setPosixFilePermissions(file, filePerms))) ++
         Stream.eval(Concurrent[F].start(schedule(name, sc.meta.getHeadOr(Key.Schedule, ""))))).
         compile.drain).
@@ -73,7 +73,7 @@ final class ScriptAppImpl[F[_]: Concurrent](cfg: Config, blockingEc: ExecutionCo
     def runProcess: F[Option[Output]] =
       Sync[F].bracket(
         executing.update(m => m.updated(name, Instant.now)))(
-        _ => C.evalOn(blockingEc)(Sync[F].delay(OS.execute(cfg.scriptDir.resolve(name), args, cfg))))(
+        _ => C.blockOn(blocker)(Sync[F].delay(OS.execute(cfg.scriptDir.resolve(name), args, cfg))))(
         _ => executing.update(m => m - name))
 
     val exe: F[Option[(Script[F], Output)]] =
@@ -148,7 +148,7 @@ final class ScriptAppImpl[F[_]: Concurrent](cfg: Config, blockingEc: ExecutionCo
         Some(cfg.scriptDir)
     }
 
-    val monitor: F[Unit] = io.file.watcher.
+    val monitor: F[Unit] = io.file.watcher(blocker).
       use(watcher => {
         watcher.watch(cfg.scriptDir, Seq(EventType.Created, EventType.Modified,EventType.Deleted)).
           flatMap { _ =>
@@ -187,9 +187,9 @@ final class ScriptAppImpl[F[_]: Concurrent](cfg: Config, blockingEc: ExecutionCo
 object ScriptAppImpl {
 
   def create[F[_]: Concurrent](cfg: Config
-    , blockingEc: ExecutionContext)
+    , blocker: Blocker)
     (implicit C: ContextShift[F], T: Timer[F]): F[ScriptApp[F]] =
     for {
       ref <- Ref.of[F, Map[String, Instant]](Map.empty)
-    } yield new ScriptAppImpl(cfg, blockingEc, ref)
+    } yield new ScriptAppImpl(cfg, blocker, ref)
 }

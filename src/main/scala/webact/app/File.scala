@@ -6,7 +6,7 @@ import java.nio.file.{Files, Path}
 import java.nio.file.StandardOpenOption._
 import java.nio.file.StandardCopyOption._
 import java.nio.charset.StandardCharsets
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import io.circe._
 import io.circe.syntax._
 

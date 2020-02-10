@@ -1,6 +1,6 @@
 package webact
 
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect._
 import cats.implicits._
 import scala.concurrent.ExecutionContext
 import java.util.concurrent.Executors
@@ -11,7 +11,8 @@ import webact.config.Config
 object Main extends IOApp {
   private[this] val logger = LoggerFactory.getLogger(getClass)
 
-  val blockingEc: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool)
+  val blocker: Blocker = Blocker.liftExecutionContext(
+    ExecutionContext.fromExecutor(Executors.newCachedThreadPool))
 
   def run(args: List[String]) = {
     args match {
@@ -34,6 +35,6 @@ object Main extends IOApp {
     }
 
     val cfg = Config.default
-    WebactServer.stream[IO](cfg, blockingEc).compile.drain.as(ExitCode.Success)
+    WebactServer.stream[IO](cfg, blocker).compile.drain.as(ExitCode.Success)
   }
 }

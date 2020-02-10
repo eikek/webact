@@ -6,6 +6,7 @@ import org.http4s.HttpRoutes
 import org.http4s.dsl.Http4sDsl
 import org.http4s.circe.CirceEntityEncoder._
 import io.circe._, io.circe.generic.semiauto._
+import webact.BuildInfo
 
 import webact.config._
 

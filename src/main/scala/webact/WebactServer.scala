@@ -1,11 +1,10 @@
 package webact
 
-import cats.effect.{ConcurrentEffect, Timer, ContextShift}
+import cats.effect._
 import cats.implicits._
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.implicits._
 import fs2.Stream
-import scala.concurrent.ExecutionContext
 
 import org.http4s.server.middleware.Logger
 import org.http4s.server.Router
@@ -14,18 +13,18 @@ import webact.app._
 
 object WebactServer {
 
-  def stream[F[_]: ConcurrentEffect](cfg: Config, blockingEc: ExecutionContext)
+  def stream[F[_]: ConcurrentEffect](cfg: Config, blocker: Blocker)
     (implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
     val app = for {
-      scriptApp  <- ScriptAppImpl.create[F](cfg, blockingEc)
+      scriptApp  <- ScriptAppImpl.create[F](cfg, blocker)
       _          <- scriptApp.init
       _          <- scriptApp.startMonitoring
 
       httpApp = Router(
         "/api/info" -> InfoRoutes.infoRoutes(cfg),
-        "/api/v1" -> (ScriptJsonRoutes.routes[F](scriptApp, blockingEc, cfg) <+> ScriptDataRoutes.routes[F](scriptApp, blockingEc, cfg)),
-        "/app/assets" -> WebjarRoutes.appRoutes[F](blockingEc, cfg),
-        "/app" -> TemplateRoutes.indexRoutes[F](blockingEc, cfg)
+        "/api/v1" -> (ScriptJsonRoutes.routes[F](scriptApp, blocker, cfg) <+> ScriptDataRoutes.routes[F](scriptApp, blocker, cfg)),
+        "/app/assets" -> WebjarRoutes.appRoutes[F](blocker, cfg),
+        "/app" -> TemplateRoutes.indexRoutes[F](blocker, cfg)
       ).orNotFound
 
       // With Middlewares in place
