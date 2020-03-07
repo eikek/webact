@@ -5,15 +5,15 @@ object Dependencies {
   val CirceVersion = "0.13.0"
   val FastparseVersion = "2.2.4"
   val Fs2Version = "2.2.2"
-  val Http4sVersion = "0.21.0"
+  val Http4sVersion = "0.21.1"
   val KindProjectorVersion = "0.10.3"
   val LogbackVersion = "1.2.3"
   val YamuscaVersion = "0.6.1"
   val betterMonadicForVersion = "0.3.1"
-  val dnsJavaVersion = "2.1.9"
+  val dnsJavaVersion = "3.0.1"
   val javaxMailVersion = "1.6.2"
   val miniTestVersion = "2.7.0"
-  val pureConfigVersion = "0.12.2"
+  val pureConfigVersion = "0.12.3"
 
   val fs2 = Seq(
     "co.fs2" %% "fs2-core" % Fs2Version,
@@ -56,7 +56,7 @@ object Dependencies {
   )
 
   val webjars = Seq(
-    "swagger-ui" -> "3.24.3",
+    "swagger-ui" -> "3.25.0",
     "Semantic-UI" -> "2.4.1",
     "jquery" -> "3.4.1",
     "highlightjs" -> "9.15.10"
