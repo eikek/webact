@@ -14,6 +14,12 @@ object Dependencies {
   val javaxMailVersion = "1.6.2"
   val miniTestVersion = "2.7.0"
   val pureConfigVersion = "0.12.3"
+  val calevVersion = "0.1.0"
+
+  val calev = Seq(
+    "com.github.eikek" %% "calev-core" % calevVersion,
+    "com.github.eikek" %% "calev-fs2" % calevVersion
+  )
 
   val fs2 = Seq(
     "co.fs2" %% "fs2-core" % Fs2Version,

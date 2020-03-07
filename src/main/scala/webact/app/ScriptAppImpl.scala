@@ -14,6 +14,7 @@ import java.nio.file.attribute.{PosixFilePermission => Perm}
 import java.util.concurrent._
 import java.time._
 import org.slf4j._
+import com.github.eikek.fs2calev._
 
 import webact.config._
 import File._
@@ -141,9 +142,9 @@ final class ScriptAppImpl[F[_]: Concurrent](
 
   def schedule(name: String, timer: String): F[Option[ScheduleData[F]]] =
     cancelSchedule(name) >> //cancel so that empty timer strimg deactives scheduled run
-      Stream
-        .eval(TimerCal.nextTrigger(timer))
-        .unNoneTerminate
+      CalevFs2
+        .parseStream[F](timer)
+        .flatMap(CalevFs2.durationFromNow[F])
         .evalMap(fd => scheduleRun(name, fd))
         .compile
         .last
