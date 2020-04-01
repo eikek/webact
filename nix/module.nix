@@ -25,6 +25,7 @@ let
     extra-path = [ "/bin" "/usr/bin" "/run/current-system/sw/bin" ];
     env = {};
     monitor-scripts = true;
+    heap-size = "100m";
     bind = {
       address = "localhost";
       port = 8011;
@@ -65,6 +66,11 @@ in {
         '';
       };
 
+      heap-size = mkOption {
+        type = types.str;
+        default = defaults.heap-size;
+        description = "The maximum heap size for the jvm.";
+      };
 
       app-name = mkOption {
         type = types.str;
@@ -218,12 +224,12 @@ in {
         mkdir -p ${cfg.tmp-dir}
       '';
 
-      script = "${pkgs.webact}/bin/webact -J-Xmx100m ${webactConf}";
+      script = "${pkgs.webact}/bin/webact -J-Xmx${cfg.heap-size} ${webactConf}";
     };
 
     systemd.services.webact =
       let
-        cmd = "${pkgs.webact}/bin/webact ${webactConf}";
+        cmd = "${pkgs.webact}/bin/webact -J-Xmx${cfg.heap-size} ${webactConf}";
       in
         mkIf (!cfg.userService) {
           description = "Webact Server";
