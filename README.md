@@ -261,6 +261,11 @@ webact {
 
   }
 
+  # If true, monitors the directory containing the scripts for
+  # external changes and reloads them in order to apply schedule
+  # changes.
+  monitor-scripts = true
+
   # The web server binds to this address.
   bind {
     host = "0.0.0.0"
@@ -277,6 +282,8 @@ webact {
     port = 0
     user = ""
     password = ""
+    start-tls = false
+    use-ssl = false
     sender = "noreply@localhost"
   }
 }
