@@ -4,17 +4,17 @@ object Dependencies {
 
   val CirceVersion = "0.13.0"
   val FastparseVersion = "2.2.4"
-  val Fs2Version = "2.2.2"
-  val Http4sVersion = "0.21.1"
+  val Fs2Version = "2.3.0"
+  val Http4sVersion = "0.21.2"
   val KindProjectorVersion = "0.10.3"
   val LogbackVersion = "1.2.3"
   val YamuscaVersion = "0.6.1"
   val betterMonadicForVersion = "0.3.1"
-  val dnsJavaVersion = "3.0.1"
+  val calevVersion = "0.1.0"
+  val dnsJavaVersion = "3.0.2"
   val javaxMailVersion = "1.6.2"
   val miniTestVersion = "2.7.0"
   val pureConfigVersion = "0.12.3"
-  val calevVersion = "0.1.0"
 
   val calev = Seq(
     "com.github.eikek" %% "calev-core" % calevVersion,
