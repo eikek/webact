@@ -5,11 +5,18 @@ let
   cfg = config.services.webact;
   user = if cfg.runAs == null then "webact" else cfg.runAs;
   str = e: if (builtins.typeOf e) == "bool" then (if e then "true" else "false") else (builtins.toString e);
-  webactConf = pkgs.writeText "webact.conf" ''
-  {"webact":
-    ${builtins.toJSON cfg}
-  }
-  '';
+  webactConf =
+    let
+      paths = with builtins;
+        (concatMap (p: ["${p}/bin" "${p}/sbin" ]) cfg.extra-packages) ++ (cfg.extra-path);
+      converted =
+        cfg // { extra-path = paths; };
+    in
+      pkgs.writeText "webact.conf" ''
+        {"webact":
+            ${builtins.toJSON converted}
+        }
+      '';
   defaults = {
     app-name = "Webact";
     script-dir = "/var/lib/webact/scripts";
@@ -95,6 +102,17 @@ in {
         type = types.listOf types.str;
         default = defaults.extra-path;
         description = "Directories to append to PATH when the script is run.";
+      };
+
+      extra-packages = mkOption {
+        type = types.listOf types.package;
+        default = [];
+        description = ''
+          A list of packages whose bin/ and sbin/ directory are added
+          to the PATH variable available in scripts.
+
+          This and `extraPaths` are concatenated.
+        '';
       };
 
       env = mkOption {

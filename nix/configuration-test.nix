@@ -34,6 +34,9 @@ in
     enable = true;
     userService = true;
     bind.address = "0.0.0.0";
+    extra-packages = [
+      pkgs.ammonite
+    ];
     env = {
       DEBUG = "1";
     };
