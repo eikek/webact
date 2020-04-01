@@ -58,7 +58,7 @@ update msg model =
 
                     else
                         Run
-                , runArgs = List.map Data.Argument.fromParam info.script.params
+                , runArgs = List.indexedMap Data.Argument.fromParam info.script.params
                 , scriptContent =
                     if model.contentEdit then
                         model.scriptContent

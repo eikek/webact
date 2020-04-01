@@ -51,9 +51,9 @@ makeEmptyArg name format index =
             Str { name = name, content = "", index = index, input = format }
 
 
-fromParam : Param -> Argument
-fromParam param =
-    makeEmptyArg param.name param.format 0
+fromParam : Int -> Param -> Argument
+fromParam index param =
+    makeEmptyArg param.name param.format index
 
 
 fold : (Arg String -> a) -> (Arg (List File) -> a) -> Argument -> a

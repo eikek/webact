@@ -279,8 +279,9 @@ runFormElement model arg =
                                     , textarea
                                         [ rows 15
                                         , onInput (SetArgumentText arg)
+                                        , Data.Argument.getText arg |> value
                                         ]
-                                        [ Data.Argument.getText arg |> text ]
+                                        []
                                     ]
                                ]
                         )
