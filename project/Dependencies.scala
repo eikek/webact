@@ -10,7 +10,7 @@ object Dependencies {
   val LogbackVersion = "1.2.3"
   val YamuscaVersion = "0.6.1"
   val betterMonadicForVersion = "0.3.1"
-  val calevVersion = "0.1.0"
+  val calevVersion = "0.2.0"
   val dnsJavaVersion = "3.0.2"
   val javaxMailVersion = "1.6.2"
   val miniTestVersion = "2.7.0"
