@@ -14,6 +14,7 @@ import java.nio.file.attribute.{PosixFilePermission => Perm}
 import java.util.concurrent._
 import java.time._
 import org.slf4j._
+import com.github.eikek.calev._
 import com.github.eikek.fs2calev._
 
 import webact.config._
@@ -155,14 +156,42 @@ final class ScriptAppImpl[F[_]: Concurrent](
           data
         }
 
-  def schedule(name: String, timer: String): F[Option[ScheduleData[F]]] =
-    cancelSchedule(name) >> //cancel so that empty timer strimg deactives scheduled run
-      CalevFs2
-        .parseStream[F](timer)
-        .flatMap(CalevFs2.durationFromNow[F])
-        .evalMap(fd => scheduleRun(name, fd))
-        .compile
-        .last
+  def schedule(name: String, timer: String): F[Option[ScheduleData[F]]] = {
+    def doSchedule(e: Either[Throwable, CalEvent]) =
+      e match {
+        case Right(ce) =>
+          CalevFs2
+            .durationFromNow[F](ce)
+            .evalMap(fd => scheduleRun(name, fd))
+        case Left(ex) =>
+          logger.warn(
+            s"Cannot schedule due to error in timer '$timer': ${ex.getMessage}"
+          )
+          Stream.empty
+      }
+
+    timer match {
+      case "" =>
+        for {
+          _ <- Sync[F].delay(logger.info(s"Cancel schedule for $name. Timer is empty."))
+          _ <- cancelSchedule(name)
+        } yield None: Option[ScheduleData[F]]
+      case _ =>
+        for {
+          _ <- Sync[F].delay(
+                logger
+                  .info(s"Cancel current schedule for $name, updating timer to '$timer'")
+              )
+          //cancel so that empty timer strimg deactives scheduled run
+          _ <- cancelSchedule(name)
+          e <- CalevFs2.parse[F](timer).attempt
+          _ <- Sync[F].delay(
+                logger.info(s"Scheduling $name for $timer (${e.map(_.asString)})")
+              )
+          sd <- doSchedule(e).compile.last
+        } yield sd
+    }
+  }
 
   def init: F[Unit] =
     Concurrent[F]
