@@ -2,8 +2,11 @@ package webact
 
 import cats.effect._
 import cats.implicits._
+import cats.data.{Kleisli, OptionT}
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.implicits._
+import org.http4s._
+import org.http4s.headers.Location
 import fs2.Stream
 
 import org.http4s.server.middleware.Logger
@@ -17,6 +20,8 @@ object WebactServer {
       cfg: Config,
       blocker: Blocker
   )(implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
+    val templates = TemplateRoutes.indexRoutes[F](blocker, cfg)
+
     val app = for {
       scriptApp <- ScriptAppImpl.create[F](cfg, blocker)
       _ <- scriptApp.init
@@ -27,8 +32,10 @@ object WebactServer {
         "/api/v1" -> (ScriptJsonRoutes
           .routes[F](scriptApp, blocker, cfg) <+> ScriptDataRoutes
           .routes[F](scriptApp, blocker, cfg)),
+        "/api/doc" -> templates.doc,
         "/app/assets" -> WebjarRoutes.appRoutes[F](blocker, cfg),
-        "/app" -> TemplateRoutes.indexRoutes[F](blocker, cfg)
+        "/app" -> templates.app,
+        "/" -> redirectTo("/app")
       ).orNotFound
 
       // With Middlewares in place
@@ -46,4 +53,15 @@ object WebactServer {
       )
 
   }.drain
+
+  def redirectTo[F[_]: Effect](path: String): HttpRoutes[F] =
+    Kleisli(_ =>
+      OptionT.pure(
+        Response[F](
+          Status.SeeOther,
+          body = Stream.empty,
+          headers = Headers.of(Location(Uri(path = path)))
+        )
+      )
+    )
 }
