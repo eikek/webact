@@ -1,0 +1,11 @@
+version: '3.7'
+services:
+  restserver:
+    image: eikek0/webact:0.4.0
+    container_name: webact
+    command: /opt/webact.conf
+    ports:
+      - "8011:8011"
+    volumes:
+      - ${PWD}/webact.conf:/opt/webact.conf
+      - ${PWD}/scripts:/var/lib/webact
