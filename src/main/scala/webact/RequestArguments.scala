@@ -39,23 +39,34 @@ object RequestArguments {
   )(implicit C: ContextShift[F]): F[Seq[Path]] =
     for {
       _ <- Sync[F].delay(
-        logger.info(s"Creating arguments from multipart request for script $script")
-      )
-      dir  <- (cfg.tmpDir / script).mkdirs
+            logger.info(s"Creating arguments from multipart request for script $script")
+          )
+      dir <- (cfg.tmpDir / script).mkdirs
       reqf <- requestFile(req, dir)
-      pfs  <- Traverse[Vector].sequence(mp.parts.map(p => makeFile(p.body, p.name, dir, blocker)))
+      pfs <- Traverse[Vector].sequence(
+              mp.parts.map(p => makeFile(p.body, p.name, dir, blocker))
+            )
     } yield Seq(reqf) ++ pfs
 
-  def fromBody[F[_]: Sync](script: String, req: Request[F], cfg: Config, blocker: Blocker)(
+  def fromBody[F[_]: Sync](
+      script: String,
+      req: Request[F],
+      cfg: Config,
+      blocker: Blocker
+  )(
       implicit C: ContextShift[F]
   ): F[Seq[Path]] = {
-    val fname = req.headers.get(`Content-Disposition`).flatMap(cd => cd.parameters.get("filename"))
+    val fname =
+      req.headers.get(`Content-Disposition`).flatMap(cd => cd.parameters.get("filename"))
     for {
-      _    <- Sync[F].delay(logger.info(s"Creating arguments from basic request for script $script"))
-      dir  <- (cfg.tmpDir / script).mkdirs
+      _ <- Sync[F].delay(
+            logger.info(s"Creating arguments from basic request for script $script")
+          )
+      dir <- (cfg.tmpDir / script).mkdirs
       reqf <- requestFile(req, dir)
-      body <- if (req.method == Method.POST) makeFile(req.body, fname, dir, blocker).map(Seq(_))
-      else Seq.empty.pure[F]
+      body <- if (req.method == Method.POST)
+               makeFile(req.body, fname, dir, blocker).map(Seq(_))
+             else Seq.empty.pure[F]
     } yield Seq(reqf) ++ body
   }
 
@@ -63,7 +74,7 @@ object RequestArguments {
     for {
       tmp <- dir.newTempFile("request-file-XXXXX", "json")
       src <- tmp.replaceContent(RequestDetails(req))
-      f   <- makeFinalFile(src, dir, Some("request"))
+      f <- makeFinalFile(src, dir, Some("request"))
     } yield f
 
   private def makeFile[F[_]: Sync](
@@ -74,17 +85,21 @@ object RequestArguments {
   )(implicit C: ContextShift[F]): F[Path] =
     for {
       tmp <- dir.newTempFile("arg-file-XXXXX", "out")
-      _   <- Sync[F].delay(logger.debug(s"Make argument file $tmp"))
-      _   <- bytes.through(file.writeAll(tmp, blocker, Seq.empty)).compile.drain
-      f   <- makeFinalFile(tmp, dir, name)
+      _ <- Sync[F].delay(logger.debug(s"Make argument file $tmp"))
+      _ <- bytes.through(file.writeAll(tmp, blocker, Seq.empty)).compile.drain
+      f <- makeFinalFile(tmp, dir, name)
     } yield f
 
-  private def makeFinalFile[F[_]: Sync](tmp: Path, dir: Path, name: Option[String]): F[Path] =
+  private def makeFinalFile[F[_]: Sync](
+      tmp: Path,
+      dir: Path,
+      name: Option[String]
+  ): F[Path] =
     for {
-      sha   <- tmp.sha256
+      sha <- tmp.sha256
       fname <- name.map(n => sha + "-" + base64(n)).getOrElse(sha).pure[F]
-      file  <- tmp.moveTo(dir / fname)
-      _     <- Sync[F].delay(logger.debug(s"Created argument file $file"))
+      file <- tmp.moveTo(dir / fname)
+      _ <- Sync[F].delay(logger.debug(s"Created argument file $file"))
     } yield file
 
   private def base64(plain: String): String =

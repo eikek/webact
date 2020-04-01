@@ -12,7 +12,9 @@ object Main extends IOApp {
   private[this] val logger = LoggerFactory.getLogger(getClass)
 
   val blocker: Blocker =
-    Blocker.liftExecutionContext(ExecutionContext.fromExecutor(Executors.newCachedThreadPool))
+    Blocker.liftExecutionContext(
+      ExecutionContext.fromExecutor(Executors.newCachedThreadPool)
+    )
 
   def run(args: List[String]) = {
     args match {

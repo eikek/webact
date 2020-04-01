@@ -19,15 +19,16 @@ object WebactServer {
   )(implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
     val app = for {
       scriptApp <- ScriptAppImpl.create[F](cfg, blocker)
-      _         <- scriptApp.init
-      _         <- scriptApp.startMonitoring
+      _ <- scriptApp.init
+      _ <- scriptApp.startMonitoring
 
       httpApp = Router(
         "/api/info" -> InfoRoutes.infoRoutes(cfg),
-        "/api/v1" -> (ScriptJsonRoutes.routes[F](scriptApp, blocker, cfg) <+> ScriptDataRoutes
+        "/api/v1" -> (ScriptJsonRoutes
+          .routes[F](scriptApp, blocker, cfg) <+> ScriptDataRoutes
           .routes[F](scriptApp, blocker, cfg)),
         "/app/assets" -> WebjarRoutes.appRoutes[F](blocker, cfg),
-        "/app"        -> TemplateRoutes.indexRoutes[F](blocker, cfg)
+        "/app" -> TemplateRoutes.indexRoutes[F](blocker, cfg)
       ).orNotFound
 
       // With Middlewares in place

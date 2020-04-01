@@ -54,10 +54,10 @@ final class ScriptAppImpl[F[_]: Concurrent](
         logger.debug(s"Found script ${name} in ${cfg.scriptDir}")
         sf.map(Option(_))
       }
-      .getOrElse({
+      .getOrElse {
         logger.debug(s"Not found script: ${name} in ${cfg.scriptDir}")
         none.pure[F]
-      })
+      }
   }
 
   def delete(name: String): F[Unit] = {
@@ -71,11 +71,16 @@ final class ScriptAppImpl[F[_]: Concurrent](
       Script
         .fromBytes(bytes)
         .flatMap(sc =>
-          (Stream.eval(Sync[F].delay(Files.createDirectories(file.getParent))) ++ sc.content
+          (Stream
+            .eval(Sync[F].delay(Files.createDirectories(file.getParent))) ++ sc.content
             .filter(_ != '\r')
-            .through(fs2.io.file.writeAll(file, blocker, List(CREATE, WRITE, TRUNCATE_EXISTING))) ++
+            .through(
+              fs2.io.file.writeAll(file, blocker, List(CREATE, WRITE, TRUNCATE_EXISTING))
+            ) ++
             Stream.eval(Sync[F].delay(Files.setPosixFilePermissions(file, filePerms))) ++
-            Stream.eval(Concurrent[F].start(schedule(name, sc.meta.getHeadOr(Key.Schedule, ""))))).compile.drain
+            Stream.eval(
+              Concurrent[F].start(schedule(name, sc.meta.getHeadOr(Key.Schedule, "")))
+            )).compile.drain
         )
         .map(_ => ())
   }
@@ -91,7 +96,9 @@ final class ScriptAppImpl[F[_]: Concurrent](
   ): F[F[Option[(Script[F], Output)]]] = {
     def runProcess: F[Option[Output]] =
       Sync[F].bracket(executing.update(m => m.updated(name, Instant.now)))(_ =>
-        C.blockOn(blocker)(Sync[F].delay(OS.execute(cfg.scriptDir.resolve(name), args, cfg)))
+        C.blockOn(blocker)(
+          Sync[F].delay(OS.execute(cfg.scriptDir.resolve(name), args, cfg))
+        )
       )(_ => executing.update(m => m - name))
 
     val exe: F[Option[(Script[F], Output)]] =
@@ -101,7 +108,8 @@ final class ScriptAppImpl[F[_]: Concurrent](
         .evalMap(sc => runProcess.map(_.map(o => (sc, o))))
         .unNoneTerminate
         .evalTap({
-          case (sc, out) => schedule(name, sc.meta.getHeadOr(Key.Schedule, "")).map(_ => ())
+          case (sc, out) =>
+            schedule(name, sc.meta.getHeadOr(Key.Schedule, "")).map(_ => ())
         })
         .onFinalize(deleteAll(args))
         .compile
@@ -123,22 +131,29 @@ final class ScriptAppImpl[F[_]: Concurrent](
     cancelSchedule(name) >>
       Sync[F].delay(
         logger.info(
-          s"Scheduling next run of $name in $when (at ${LocalDateTime.now.plus(Duration.ofNanos(when.toNanos))})"
+          s"Scheduling next run of $name in $when (at ${LocalDateTime.now
+            .plus(Duration.ofNanos(when.toNanos))})"
         )
       ) >>
       Concurrent[F]
-        .start(T.sleep(when).flatMap(_ => execute(name, Seq.empty, deletArgsAfterRun = true)))
+        .start(
+          T.sleep(when).flatMap(_ => execute(name, Seq.empty, deletArgsAfterRun = true))
+        )
         .map(_.cancel)
-        .map({ fu =>
+        .map { fu =>
           val cancel: F[Unit] =
             Sync[F].delay(logger.debug(s"Cancel current schedule for $name")) >>
               fu >>
               Sync[F].delay(schedules.remove(name)).map(_ => ())
           val data =
-            ScheduleData(name, cancel, LocalDateTime.now.plus(Duration.ofMillis(when.toMillis)))
+            ScheduleData(
+              name,
+              cancel,
+              LocalDateTime.now.plus(Duration.ofMillis(when.toMillis))
+            )
           schedules.put(name, data)
           data
-        })
+        }
 
   def schedule(name: String, timer: String): F[Option[ScheduleData[F]]] =
     cancelSchedule(name) >> //cancel so that empty timer strimg deactives scheduled run
@@ -155,7 +170,10 @@ final class ScriptAppImpl[F[_]: Concurrent](
         (
           listAll
             .evalMap(sc =>
-              schedule(sc.meta.getHeadOr(Key.Name, ""), sc.meta.getHeadOr(Key.Schedule, ""))
+              schedule(
+                sc.meta.getHeadOr(Key.Name, ""),
+                sc.meta.getHeadOr(Key.Schedule, "")
+              )
             )
             .compile
             .drain
@@ -169,7 +187,9 @@ final class ScriptAppImpl[F[_]: Concurrent](
     else
       Sync[F]
         .delay(
-          logger.info("Not monitoring script directory, because it is disabled in config file")
+          logger.info(
+            "Not monitoring script directory, because it is disabled in config file"
+          )
         )
         .map(_ => ().pure[F])
 
@@ -187,7 +207,10 @@ final class ScriptAppImpl[F[_]: Concurrent](
 
     val monitor: F[Unit] = io.file.watcher(blocker).use { watcher =>
       watcher
-        .watch(cfg.scriptDir, Seq(EventType.Created, EventType.Modified, EventType.Deleted))
+        .watch(
+          cfg.scriptDir,
+          Seq(EventType.Created, EventType.Modified, EventType.Deleted)
+        )
         .flatMap { _ =>
           watcher
             .events()
@@ -195,13 +218,19 @@ final class ScriptAppImpl[F[_]: Concurrent](
             .evalMap({
               case Some(f) if f == cfg.scriptDir =>
                 Sync[F]
-                  .delay(logger.info("Reloading all scripts due to unknown external event")) >> init
+                  .delay(
+                    logger.info("Reloading all scripts due to unknown external event")
+                  ) >> init
               case Some(f) =>
                 find(f.name).flatMap {
                   case Some(sc) =>
-                    Sync[F].delay(logger.info(s"Reloading script $f due to external changes")) >>
-                      schedule(sc.meta.getHeadOr(Key.Name, ""), sc.meta.getHeadOr(Key.Schedule, ""))
-                        .map(_ => ())
+                    Sync[F].delay(
+                      logger.info(s"Reloading script $f due to external changes")
+                    ) >>
+                      schedule(
+                        sc.meta.getHeadOr(Key.Name, ""),
+                        sc.meta.getHeadOr(Key.Schedule, "")
+                      ).map(_ => ())
                   case None =>
                     ().pure[F]
                 }

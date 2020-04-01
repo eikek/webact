@@ -13,7 +13,9 @@ object MetaParser {
       case Parsed.Success(v, _) => v
       case f @ Parsed.Failure(a, b, c) =>
         val trace = f.trace()
-        logger.warn(s"Cannot parse script meta data at index ${trace.index}: ${trace.msg}")
+        logger.warn(
+          s"Cannot parse script meta data at index ${trace.index}: ${trace.msg}"
+        )
         logger.warn(s"Content is: ${content}")
         MetaHeader(Key.Enabled -> "true")
     }
@@ -45,7 +47,7 @@ object MetaParser {
   def newline[_: P] = P("\n")
 
   def webactStart[_: P] = "<webact>"
-  def webactEnd[_: P]   = "</webact>"
+  def webactEnd[_: P] = "</webact>"
 
   def key[_: P]: P[String] =
     P(CharIn("a-z", "A-Z") ~ CharIn("a-z", "A-Z", "0-9", "+_\\-").rep).!
@@ -60,9 +62,9 @@ object MetaParser {
     keyValue.rep.map(makeMap)
 
   def description[_: P] =
-    (P(P(!webactEnd ~ AnyChar).rep.!).map { str =>
+    P(P(!webactEnd ~ AnyChar).rep.!).map { str =>
       str.trim
-    }) ~ webactEnd
+    } ~ webactEnd
 
   def metaMap[_: P]: P[MetaHeader] =
     P(webactStart ~ newline ~ keyValues ~ description).map {

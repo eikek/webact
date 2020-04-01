@@ -14,24 +14,25 @@ object Param {
     def name: String = productPrefix
   }
   object Format {
-    case object Line     extends Format
-    case object Text     extends Format
+    case object Line extends Format
+    case object Text extends Format
     case object Password extends Format
-    case object File     extends Format
-    case object Files    extends Format
+    case object File extends Format
+    case object Files extends Format
   }
 
   object Parser {
 
     def format[_: P]: P[Format] =
-      StringInIgnoreCase("line", "text", "password", "file", "files").!.map(_.toLowerCase).map {
-        case "line"     => Format.Line
-        case "text"     => Format.Text
-        case "password" => Format.Password
-        case "file"     => Format.File
-        case "files"    => Format.Files
-        case _          => Format.Line
-      }
+      StringInIgnoreCase("line", "text", "password", "file", "files").!.map(_.toLowerCase)
+        .map {
+          case "line"     => Format.Line
+          case "text"     => Format.Text
+          case "password" => Format.Password
+          case "file"     => Format.File
+          case "files"    => Format.Files
+          case _          => Format.Line
+        }
 
     def nameFormat[_: P]: P[Param] =
       P(CharPred(c => c != '=').rep(1).! ~ "=" ~ format).map {

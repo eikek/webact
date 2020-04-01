@@ -45,12 +45,19 @@ object MailSender {
           .reduce(_.combine(_))
       }
 
-    def send(m: Message, recipients: Seq[Mail], mx: Option[String]): Either[Exception, Unit] =
+    def send(
+        m: Message,
+        recipients: Seq[Mail],
+        mx: Option[String]
+    ): Either[Exception, Unit] =
       makeSession(mx).map(new MimeMessage(_)).flatMap { msg =>
         Either.catchOnly[Exception] {
           msg.setFrom(new InternetAddress(m.sender.address))
           for (to <- recipients) {
-            msg.addRecipient(javax.mail.Message.RecipientType.TO, new InternetAddress(to.address))
+            msg.addRecipient(
+              javax.mail.Message.RecipientType.TO,
+              new InternetAddress(to.address)
+            )
           }
           m.listId.foreach(id => msg.setHeader("List-Id", "<" + id + ">"))
           msg.setSubject(m.subject)
@@ -81,9 +88,7 @@ object MailSender {
         }
       } else {
         logger.debug(s"Using MX resolved host '$mx' for smtp")
-        mx.foreach { host =>
-          props.setProperty("mail.smtp.host", host)
-        }
+        mx.foreach(host => props.setProperty("mail.smtp.host", host))
       }
       Option(props.getProperty("mail.smtp.host")) match {
         case Some(_) =>

@@ -26,8 +26,10 @@ object TemplateRoutes {
   def indexRoutes[F[_]: Effect](blocker: Blocker, cfg: Config)(
       implicit C: ContextShift[F]
   ): HttpRoutes[F] = {
-    val indexTemplate = Util.memo(loadResource("/index.html").flatMap(loadTemplate(_, blocker)))
-    val docTemplate   = Util.memo(loadResource("/doc.html").flatMap(loadTemplate(_, blocker)))
+    val indexTemplate =
+      Util.memo(loadResource("/index.html").flatMap(loadTemplate(_, blocker)))
+    val docTemplate =
+      Util.memo(loadResource("/doc.html").flatMap(loadTemplate(_, blocker)))
 
     val dsl = new Http4sDsl[F] {}
     import dsl._
@@ -35,12 +37,12 @@ object TemplateRoutes {
       case GET -> Root / "index.html" =>
         for {
           templ <- indexTemplate
-          resp  <- Ok(IndexData(cfg).render(templ), `Content-Type`(`text/html`))
+          resp <- Ok(IndexData(cfg).render(templ), `Content-Type`(`text/html`))
         } yield resp
       case GET -> Root / "doc" =>
         for {
           templ <- docTemplate
-          resp  <- Ok(DocData(cfg).render(templ), `Content-Type`(`text/html`))
+          resp <- Ok(DocData(cfg).render(templ), `Content-Type`(`text/html`))
         } yield resp
     }
   }
@@ -53,7 +55,9 @@ object TemplateRoutes {
         r.pure[F]
     }
 
-  def loadUrl[F[_]: Sync](url: URL, blocker: Blocker)(implicit C: ContextShift[F]): F[String] =
+  def loadUrl[F[_]: Sync](url: URL, blocker: Blocker)(
+      implicit C: ContextShift[F]
+  ): F[String] =
     Stream
       .bracket(Sync[F].delay(url.openStream))(in => Sync[F].delay(in.close))
       .flatMap(in => io.readInputStream(in.pure[F], 64 * 1024, blocker, false))

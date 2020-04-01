@@ -15,36 +15,42 @@ import webact.config._
 
 object ScriptJsonRoutes {
   val `text/plain` = new MediaType("text", "plain")
-  val noCache      = `Cache-Control`(CacheDirective.`no-cache`())
+  val noCache = `Cache-Control`(CacheDirective.`no-cache`())
 
-  def routes[F[_]: Sync](S: ScriptApp[F], blocker: Blocker, cfg: Config): HttpRoutes[F] = {
+  def routes[F[_]: Sync](
+      S: ScriptApp[F],
+      blocker: Blocker,
+      cfg: Config
+  ): HttpRoutes[F] = {
     val dsl = new Http4sDsl[F] {}
     import dsl._
     HttpRoutes.of[F] {
 
       case GET -> Root / "scripts" / name / "output" =>
         for {
-          out  <- S.findOutput(name)
+          out <- S.findOutput(name)
           resp <- out.map(o => Ok(output(o))).getOrElse(NotFound())
         } yield resp
 
       case GET -> Root / "scripts" / name =>
         for {
           script <- S.find(name)
-          sch    <- S.findSchedule(name).pure[F]
-          exe    <- S.isExecuting(name)
-          out    <- S.findOutput(name)
+          sch <- S.findSchedule(name).pure[F]
+          exe <- S.isExecuting(name)
+          out <- S.findOutput(name)
           resp <- script
-            .map(s => Ok(ScriptInfo(detail(s, sch, exe), out.map(output(_)))))
-            .getOrElse(NotFound())
+                   .map(s => Ok(ScriptInfo(detail(s, sch, exe), out.map(output(_)))))
+                   .getOrElse(NotFound())
         } yield resp
 
       case GET -> Root / "scripts" / name / "running" =>
         for {
           exe <- S.isExecuting(name)
           resp <- Ok(
-            RunningInfo(exe.map(i => Duration.between(i, Instant.now).toMillis).getOrElse(0))
-          )
+                   RunningInfo(
+                     exe.map(i => Duration.between(i, Instant.now).toMillis).getOrElse(0)
+                   )
+                 )
         } yield resp
 
       case GET -> Root / "scripts" =>

@@ -14,7 +14,7 @@ import webact.config._
 
 object ScriptDataRoutes {
   val `text/plain` = new MediaType("text", "plain")
-  val noCache      = `Cache-Control`(CacheDirective.`no-cache`())
+  val noCache = `Cache-Control`(CacheDirective.`no-cache`())
 
   def routes[F[_]: Sync](S: ScriptApp[F], blocker: Blocker, cfg: Config)(
       implicit C: ContextShift[F]
@@ -26,50 +26,50 @@ object ScriptDataRoutes {
       case req @ POST -> Root / "scripts" / name / "run" =>
         for {
           args <- RequestArguments(name, req, cfg, blocker)
-          _    <- S.execute(name, args, deletArgsAfterRun = true)
+          _ <- S.execute(name, args, deletArgsAfterRun = true)
           resp <- Ok()
         } yield resp
 
       case req @ POST -> Root / "scripts" / name / "runsync" =>
         for {
-          args   <- RequestArguments(name, req, cfg, blocker)
-          fout   <- S.execute(name, args, deletArgsAfterRun = true)
+          args <- RequestArguments(name, req, cfg, blocker)
+          fout <- S.execute(name, args, deletArgsAfterRun = true)
           optout <- fout
-          resp   <- optout.map(makeResponse(dsl, req, blocker)).getOrElse(NotFound())
+          resp <- optout.map(makeResponse(dsl, req, blocker)).getOrElse(NotFound())
         } yield resp
 
       case req @ GET -> Root / "scripts" / name / "runsync" =>
         for {
-          args   <- RequestArguments(name, req, cfg, blocker)
-          fout   <- S.execute(name, args, deletArgsAfterRun = true)
+          args <- RequestArguments(name, req, cfg, blocker)
+          fout <- S.execute(name, args, deletArgsAfterRun = true)
           optout <- fout
-          resp   <- optout.map(makeResponse(dsl, req, blocker)).getOrElse(NotFound())
+          resp <- optout.map(makeResponse(dsl, req, blocker)).getOrElse(NotFound())
         } yield resp
 
       case req @ GET -> Root / "scripts" / name / "output" / "stdout" =>
         for {
           out <- S.findOutput(name)
           resp <- out
-            .map(o =>
-              StaticFile
-                .fromFile(o.stdout.toFile, blocker, Some(req))
-                .map(_.withHeaders(noCache))
-                .getOrElseF(NotFound())
-            )
-            .getOrElse(NotFound())
+                   .map(o =>
+                     StaticFile
+                       .fromFile(o.stdout.toFile, blocker, Some(req))
+                       .map(_.withHeaders(noCache))
+                       .getOrElseF(NotFound())
+                   )
+                   .getOrElse(NotFound())
         } yield resp
 
       case req @ GET -> Root / "scripts" / name / "output" / "stderr" =>
         for {
           out <- S.findOutput(name)
           resp <- out
-            .map(o =>
-              StaticFile
-                .fromFile(o.stderr.toFile, blocker, Some(req))
-                .map(_.withHeaders(noCache))
-                .getOrElseF(NotFound())
-            )
-            .getOrElse(NotFound())
+                   .map(o =>
+                     StaticFile
+                       .fromFile(o.stderr.toFile, blocker, Some(req))
+                       .map(_.withHeaders(noCache))
+                       .getOrElseF(NotFound())
+                   )
+                   .getOrElse(NotFound())
         } yield resp
 
       case GET -> Root / "scripts" / name / "content" =>
@@ -80,8 +80,11 @@ object ScriptDataRoutes {
         for {
           sc <- S.find(name)
           resp <- sc
-            .map(o => Ok(o.asUtf8, `Content-Type`(`text/plain`)).map(_.withHeaders(noCache)))
-            .getOrElse(NotFound())
+                   .map(o =>
+                     Ok(o.asUtf8, `Content-Type`(`text/plain`))
+                       .map(_.withHeaders(noCache))
+                   )
+                   .getOrElse(NotFound())
         } yield resp
 
       case req @ PUT -> Root / "scripts" / name =>
@@ -91,9 +94,9 @@ object ScriptDataRoutes {
         for {
           mp <- req.as[Multipart[F]]
           resp <- mp.parts
-            .find(_.name.contains("script"))
-            .map(p => S.store(name, p.body).flatMap(_ => Ok()))
-            .getOrElse(BadRequest())
+                   .find(_.name.contains("script"))
+                   .map(p => S.store(name, p.body).flatMap(_ => Ok()))
+                   .getOrElse(BadRequest())
         } yield resp
 
       case DELETE -> Root / "scripts" / name =>
@@ -101,7 +104,11 @@ object ScriptDataRoutes {
     }
   }
 
-  private def makeResponse[F[_]: Sync](dsl: Http4sDsl[F], req: Request[F], blocker: Blocker)(
+  private def makeResponse[F[_]: Sync](
+      dsl: Http4sDsl[F],
+      req: Request[F],
+      blocker: Blocker
+  )(
       p: (Script[F], Output)
   )(implicit C: ContextShift[F]) = {
     import dsl._

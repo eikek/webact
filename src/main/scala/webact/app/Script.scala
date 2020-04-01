@@ -26,8 +26,8 @@ object Script {
     fromBytes(fs2.io.file.readAll(file, blocker, 64 * 1024)).map(
       _.update(
         MetaHeader(
-          Key.Name    -> file.getFileName.toString,
-          Key.Size    -> Files.size(file).toString,
+          Key.Name -> file.getFileName.toString,
+          Key.Size -> Files.size(file).toString,
           Key.LastMod -> Files.getLastModifiedTime(file).toInstant.toEpochMilli.toString
         )
       )
@@ -45,5 +45,6 @@ object Script {
   }
 
   def fromString[F[_]: Applicative](content: String): F[Script[F]] =
-    Script(Stream.emits(content.getBytes).covary[F], MetaParser.parseMeta(content)).pure[F]
+    Script(Stream.emits(content.getBytes).covary[F], MetaParser.parseMeta(content))
+      .pure[F]
 }

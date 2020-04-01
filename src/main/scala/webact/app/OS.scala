@@ -25,11 +25,11 @@ object OS {
     val meta = readMeta(script).set(Key.Name, script.getFileName.toString)
     if (meta.get(Key.Enabled).exists(_.equalsIgnoreCase("true"))) {
       val tmpDir = Files.createDirectories(cfg.tmpDir.resolve(script.getFileName))
-      val out    = tmpDir.resolve("stdout.txt").toAbsolutePath.normalize
+      val out = tmpDir.resolve("stdout.txt").toAbsolutePath.normalize
       Files.deleteIfExists(out)
       val err = tmpDir.resolve("stderr.txt").toAbsolutePath.normalize
       Files.deleteIfExists(err)
-      val runjson     = tmpDir.resolve("run.json").toAbsolutePath.normalize
+      val runjson = tmpDir.resolve("run.json").toAbsolutePath.normalize
       val existingRun = readRunjson(runjson)
 
       logger.info(s"Executing $script in WD ${cfg.tmpDir}!")
@@ -107,13 +107,17 @@ object OS {
     val name = meta.getHead(Key.Name).getOrElse("<unknown>")
     val recipients =
       (meta.get(Key.NotifyErrorMail).filter(_ => output.failure) ++
-        meta.get(Key.NotifyMail)).map(_.trim).filter(_.nonEmpty).map(s => MailSender.Mail(s))
+        meta.get(Key.NotifyMail))
+        .map(_.trim)
+        .filter(_.nonEmpty)
+        .map(s => MailSender.Mail(s))
     logger.debug(s"Got $recipients recipients to notify.")
 
     if (recipients.nonEmpty) {
-      val subject = meta.getHeadOr(Key.NotifySubject, s"[${cfg.appName}] Run ${name}") match {
-        case s => s + (if (output.failure) ": FAILED" else "")
-      }
+      val subject =
+        meta.getHeadOr(Key.NotifySubject, s"[${cfg.appName}] Run ${name}") match {
+          case s => s + (if (output.failure) ": FAILED" else "")
+        }
       val text = {
         if (output.success) read(output.stdout)
         else {
@@ -152,10 +156,10 @@ object OS {
         .getOrElse(Json.Null)
         .as[Output]
         .map(Some(_))
-        .getOrElse({
+        .getOrElse {
           logger.warn(s"Cannot read meta.json: $file!")
           None
-        })
+        }
     } else {
       None
     }
