@@ -6,11 +6,11 @@ RUN apk add --no-cache openjdk11-jre unzip curl bash
 
 RUN mkdir -p /opt \
   && cd /opt \
-  && curl -L -o webact.zip https://github.com/eikek/webact/releases/download/v0.5.0/webact-0.5.0.zip \
+  && curl -L -o webact.zip https://github.com/eikek/webact/releases/download/v0.5.1/webact-0.5.1.zip \
   && unzip webact.zip \
   && rm webact.zip \
   && apk del unzip curl
 
 EXPOSE 8011
 
-ENTRYPOINT ["/opt/webact-0.5.0/bin/webact"]
+ENTRYPOINT ["/opt/webact-0.5.1/bin/webact"]

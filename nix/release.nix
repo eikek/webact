@@ -1,5 +1,12 @@
 rec {
   cfg = {
+    v0_5_1 = rec {
+      version = "0.5.1";
+      src = {
+        url = "https://github.com/eikek/webact/releases/download/v${version}/webact-${version}.zip";
+        sha256 = "006aljqhx164bl3s9mpffr2zdcnf606qhnwj5f91hv5q8m5a6kdg";
+      };
+    };
     v0_5_0 = rec {
       version = "0.5.0";
       src = {
@@ -9,7 +16,7 @@ rec {
     };
   };
   pkg = v: import ./pkg.nix v;
-  currentPkg = pkg cfg.v0_5_0;
+  currentPkg = pkg cfg.v0_5_1;
   module = ./module.nix;
   modules = [ module
             ];
