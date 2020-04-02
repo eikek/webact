@@ -4,7 +4,7 @@ rec {
       version = "0.5.1";
       src = {
         url = "https://github.com/eikek/webact/releases/download/v${version}/webact-${version}.zip";
-        sha256 = "006aljqhx164bl3s9mpffr2zdcnf606qhnwj5f91hv5q8m5a6kdg";
+        sha256 = "0dggfdia3xj13ns5w532hvn0hmlfnsvmqg7zbc0hfgzph165pcz6";
       };
     };
     v0_5_0 = rec {
