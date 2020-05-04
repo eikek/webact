@@ -38,19 +38,20 @@ object ScriptJsonRoutes {
           sch <- S.findSchedule(name).pure[F]
           exe <- S.isExecuting(name)
           out <- S.findOutput(name)
-          resp <- script
-                   .map(s => Ok(ScriptInfo(detail(s, sch, exe), out.map(output(_)))))
-                   .getOrElse(NotFound())
+          resp <-
+            script
+              .map(s => Ok(ScriptInfo(detail(s, sch, exe), out.map(output(_)))))
+              .getOrElse(NotFound())
         } yield resp
 
       case GET -> Root / "scripts" / name / "running" =>
         for {
           exe <- S.isExecuting(name)
           resp <- Ok(
-                   RunningInfo(
-                     exe.map(i => Duration.between(i, Instant.now).toMillis).getOrElse(0)
-                   )
-                 )
+            RunningInfo(
+              exe.map(i => Duration.between(i, Instant.now).toMillis).getOrElse(0)
+            )
+          )
         } yield resp
 
       case GET -> Root / "scripts" =>

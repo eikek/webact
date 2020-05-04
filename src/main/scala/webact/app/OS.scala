@@ -120,12 +120,11 @@ object OS {
         }
       val text = {
         if (output.success) read(output.stdout)
-        else {
+        else
           "--- stdout ---\n\n" +
             read(output.stdout) +
             "\n\n--- stderr ---\n\n" +
             read(output.stderr)
-        }
       }
       val msg = MailSender.Message(
         recipients,
@@ -144,14 +143,13 @@ object OS {
   }
 
   private def readMeta(script: Path): MetaHeader =
-    if (Files.exists(script)) {
+    if (Files.exists(script))
       MetaParser.parseMeta(new String(Files.readAllBytes(script)))
-    } else {
+    else
       MetaHeader(Key.Enabled -> "false")
-    }
 
   private def readRunjson(file: Path): Option[Output] =
-    if (Files.exists(file)) {
+    if (Files.exists(file))
       parse(new String(Files.readAllBytes(file)))
         .getOrElse(Json.Null)
         .as[Output]
@@ -160,9 +158,8 @@ object OS {
           logger.warn(s"Cannot read meta.json: $file!")
           None
         }
-    } else {
+    else
       None
-    }
 
   private def writeRunjson(out: Output, file: Path): Unit = {
     val metaData = out.asJson.noSpaces

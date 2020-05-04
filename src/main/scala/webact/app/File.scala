@@ -46,15 +46,16 @@ object File {
     def appendContent[F[_]: Sync, A](cnt: A)(implicit e: Encoder[A]): F[Path] =
       appendContent(cnt.asJson.noSpaces.getBytes(defaultCharset))
 
-    def sha256[F[_]: Sync]: F[String] = Sync[F].delay {
-      val md = java.security.MessageDigest.getInstance("SHA-256")
-      val in = new java.security.DigestInputStream(Files.newInputStream(p), md)
-      val buff = new Array[Byte](64 * 1024)
-      while (in.read(buff) != -1) {}
-      val sb = new StringBuilder
-      for (b <- md.digest) sb.append(Integer.toHexString(b & 0xff))
-      sb.toString
-    }
+    def sha256[F[_]: Sync]: F[String] =
+      Sync[F].delay {
+        val md = java.security.MessageDigest.getInstance("SHA-256")
+        val in = new java.security.DigestInputStream(Files.newInputStream(p), md)
+        val buff = new Array[Byte](64 * 1024)
+        while (in.read(buff) != -1) {}
+        val sb = new StringBuilder
+        for (b <- md.digest) sb.append(Integer.toHexString(b & 0xff))
+        sb.toString
+      }
 
     def moveTo[F[_]: Sync](target: Path): F[Path] =
       Sync[F].delay(Files.move(p, target, ATOMIC_MOVE, REPLACE_EXISTING))
@@ -66,13 +67,12 @@ object File {
       Sync[F].delay(Files.deleteIfExists(p))
 
     def listFiles[F[_]: Sync]: Stream[F, Path] =
-      if (exists) {
+      if (exists)
         Stream
           .bracket(Sync[F].delay(Files.list(p)))(s => Sync[F].delay(s.close))
           .flatMap(s => Stream.fromIterator(s.iterator.asScala))
-      } else {
+      else
         Stream.empty
-      }
   }
 
 }

@@ -56,7 +56,7 @@ object MetaParser {
     P(CharsWhile(c => c != '\n').!)
 
   def keyValue[_: P]: P[(String, String)] =
-    (key ~ " ".rep ~ ":" ~ " ".rep ~ value ~ newline)
+    key ~ " ".rep ~ ":" ~ " ".rep ~ value ~ newline
 
   def keyValues[_: P]: P[MetaHeader] =
     keyValue.rep.map(makeMap)

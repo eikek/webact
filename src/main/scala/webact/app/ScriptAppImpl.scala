@@ -86,9 +86,10 @@ final class ScriptAppImpl[F[_]: Concurrent](
         .map(_ => ())
   }
 
-  def findOutput(name: String): F[Option[Output]] = Sync[F].delay {
-    OS.findOutput(name, cfg)
-  }
+  def findOutput(name: String): F[Option[Output]] =
+    Sync[F].delay {
+      OS.findOutput(name, cfg)
+    }
 
   def execute(
       name: String,
@@ -179,15 +180,15 @@ final class ScriptAppImpl[F[_]: Concurrent](
       case _ =>
         for {
           _ <- Sync[F].delay(
-                logger
-                  .info(s"Cancel current schedule for $name, updating timer to '$timer'")
-              )
+            logger
+              .info(s"Cancel current schedule for $name, updating timer to '$timer'")
+          )
           //cancel so that empty timer strimg deactives scheduled run
           _ <- cancelSchedule(name)
           e <- CalevFs2.parse[F](timer).attempt
           _ <- Sync[F].delay(
-                logger.info(s"Scheduling $name for $timer (${e.map(_.asString)})")
-              )
+            logger.info(s"Scheduling $name for $timer (${e.map(_.asString)})")
+          )
           sd <- doSchedule(e).compile.last
         } yield sd
     }

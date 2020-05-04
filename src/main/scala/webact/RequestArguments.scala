@@ -39,13 +39,13 @@ object RequestArguments {
   )(implicit C: ContextShift[F]): F[Seq[Path]] =
     for {
       _ <- Sync[F].delay(
-            logger.info(s"Creating arguments from multipart request for script $script")
-          )
+        logger.info(s"Creating arguments from multipart request for script $script")
+      )
       dir <- (cfg.tmpDir / script).mkdirs
       reqf <- requestFile(req, dir)
       pfs <- Traverse[Vector].sequence(
-              mp.parts.map(p => makeFile(p.body, p.name, dir, blocker))
-            )
+        mp.parts.map(p => makeFile(p.body, p.name, dir, blocker))
+      )
     } yield Seq(reqf) ++ pfs
 
   def fromBody[F[_]: Sync](
@@ -53,20 +53,21 @@ object RequestArguments {
       req: Request[F],
       cfg: Config,
       blocker: Blocker
-  )(
-      implicit C: ContextShift[F]
+  )(implicit
+      C: ContextShift[F]
   ): F[Seq[Path]] = {
     val fname =
       req.headers.get(`Content-Disposition`).flatMap(cd => cd.parameters.get("filename"))
     for {
       _ <- Sync[F].delay(
-            logger.info(s"Creating arguments from basic request for script $script")
-          )
+        logger.info(s"Creating arguments from basic request for script $script")
+      )
       dir <- (cfg.tmpDir / script).mkdirs
       reqf <- requestFile(req, dir)
-      body <- if (req.method == Method.POST)
-               makeFile(req.body, fname, dir, blocker).map(Seq(_))
-             else Seq.empty.pure[F]
+      body <-
+        if (req.method == Method.POST)
+          makeFile(req.body, fname, dir, blocker).map(Seq(_))
+        else Seq.empty.pure[F]
     } yield Seq(reqf) ++ body
   }
 

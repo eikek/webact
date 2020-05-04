@@ -31,9 +31,9 @@ object MailSender {
 
   final class SmtpClient(settings: Config.Smtp) {
     def send(m: Message): ValidatedNel[Exception, Unit] =
-      if (settings.host.nonEmpty) {
+      if (settings.host.nonEmpty)
         send(m, m.recipients, None).toValidatedNel
-      } else {
+      else {
         val bydomain = m.recipients.groupBy(_.domain)
         bydomain
           .map({
@@ -53,12 +53,11 @@ object MailSender {
       makeSession(mx).map(new MimeMessage(_)).flatMap { msg =>
         Either.catchOnly[Exception] {
           msg.setFrom(new InternetAddress(m.sender.address))
-          for (to <- recipients) {
+          for (to <- recipients)
             msg.addRecipient(
               javax.mail.Message.RecipientType.TO,
               new InternetAddress(to.address)
             )
-          }
           m.listId.foreach(id => msg.setHeader("List-Id", "<" + id + ">"))
           msg.setSubject(m.subject)
           msg.setText(m.text)
@@ -73,40 +72,38 @@ object MailSender {
       if (settings.host.nonEmpty) {
         logger.debug(s"Using configured smtp settings: ${settings.maskPassword}")
         props.setProperty("mail.smtp.host", settings.host)
-        if (settings.port > 0) {
+        if (settings.port > 0)
           props.setProperty("mail.smtp.port", settings.port.toString)
-        }
         if (settings.user.nonEmpty) {
           props.setProperty("mail.user", settings.user)
           props.setProperty("mail.smtp.auth", "true")
         }
-        if (settings.startTls) {
+        if (settings.startTls)
           props.setProperty("mail.smtp.starttls.enable", "true")
-        }
-        if (settings.useSsl) {
+        if (settings.useSsl)
           props.setProperty("mail.smtp.ssl.enable", "true")
-        }
       } else {
         logger.debug(s"Using MX resolved host '$mx' for smtp")
         mx.foreach(host => props.setProperty("mail.smtp.host", host))
       }
       Option(props.getProperty("mail.smtp.host")) match {
         case Some(_) =>
-          Right(if (settings.user.nonEmpty) {
-            Session.getInstance(
-              props,
-              new Authenticator() {
-                override def getPasswordAuthentication() = {
-                  logger.debug(
-                    s"Authenticating with ${settings.user}/${settings.maskPassword.password}"
-                  )
-                  new PasswordAuthentication(settings.user, settings.password)
+          Right(
+            if (settings.user.nonEmpty)
+              Session.getInstance(
+                props,
+                new Authenticator() {
+                  override def getPasswordAuthentication() = {
+                    logger.debug(
+                      s"Authenticating with ${settings.user}/${settings.maskPassword.password}"
+                    )
+                    new PasswordAuthentication(settings.user, settings.password)
+                  }
                 }
-              }
-            )
-          } else {
-            Session.getInstance(props)
-          })
+              )
+            else
+              Session.getInstance(props)
+          )
         case None =>
           Left(new Exception("no smtp host provided"))
       }

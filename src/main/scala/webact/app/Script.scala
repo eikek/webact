@@ -20,8 +20,8 @@ case class Script[F[_]](content: Stream[F, Byte], meta: MetaHeader) {
 
 object Script {
 
-  def fromFile[F[_]: Sync](file: Path, blocker: Blocker)(
-      implicit C: ContextShift[F]
+  def fromFile[F[_]: Sync](file: Path, blocker: Blocker)(implicit
+      C: ContextShift[F]
   ): F[Script[F]] =
     fromBytes(fs2.io.file.readAll(file, blocker, 64 * 1024)).map(
       _.update(

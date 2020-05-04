@@ -28,8 +28,8 @@ object TemplateRoutes {
     def app: HttpRoutes[F]
   }
 
-  def indexRoutes[F[_]: Effect](blocker: Blocker, cfg: Config)(
-      implicit C: ContextShift[F]
+  def indexRoutes[F[_]: Effect](blocker: Blocker, cfg: Config)(implicit
+      C: ContextShift[F]
   ): InnerRoutes[F] = {
     val indexTemplate =
       Util.memo(loadResource("/index.html").flatMap(loadTemplate(_, blocker)))
@@ -44,7 +44,7 @@ object TemplateRoutes {
           case GET -> Root =>
             for {
               templ <- docTemplate
-              resp  <- Ok(DocData(cfg).render(templ), `Content-Type`(`text/html`))
+              resp <- Ok(DocData(cfg).render(templ), `Content-Type`(`text/html`))
             } yield resp
         }
       def app =
@@ -52,7 +52,7 @@ object TemplateRoutes {
           case GET -> _ =>
             for {
               templ <- indexTemplate
-              resp  <- Ok(IndexData(cfg).render(templ), `Content-Type`(`text/html`))
+              resp <- Ok(IndexData(cfg).render(templ), `Content-Type`(`text/html`))
             } yield resp
         }
     }
@@ -66,8 +66,8 @@ object TemplateRoutes {
         r.pure[F]
     }
 
-  def loadUrl[F[_]: Sync](url: URL, blocker: Blocker)(
-      implicit C: ContextShift[F]
+  def loadUrl[F[_]: Sync](url: URL, blocker: Blocker)(implicit
+      C: ContextShift[F]
   ): F[String] =
     Stream
       .bracket(Sync[F].delay(url.openStream))(in => Sync[F].delay(in.close))
@@ -84,8 +84,8 @@ object TemplateRoutes {
       }
     }
 
-  def loadTemplate[F[_]: Sync](url: URL, blocker: Blocker)(
-      implicit C: ContextShift[F]
+  def loadTemplate[F[_]: Sync](url: URL, blocker: Blocker)(implicit
+      C: ContextShift[F]
   ): F[Template] =
     loadUrl[F](url, blocker).flatMap(s => parseTemplate(s)).map { t =>
       logger.info(s"Compiled template $url")
