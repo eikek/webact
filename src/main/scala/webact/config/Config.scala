@@ -5,6 +5,7 @@ import pureconfig._
 import pureconfig.generic.ProductHint
 import pureconfig.generic.auto._
 import pureconfig.ConvertHelpers._
+import emil._
 
 case class Config(
     appName: String,
@@ -40,6 +41,14 @@ object Config {
 
     def maskPassword =
       copy(password = if (password.nonEmpty) "***" else "<none>")
+
+    def toMailConfig = {
+      val sslType =
+        if (startTls) SSLType.StartTLS
+        else if (useSsl) SSLType.SSL
+        else SSLType.NoEncryption
+      MailConfig(s"smtp://${host}:${port}", user, password, sslType)
+    }
   }
 
   case class Bind(host: String, port: Int)

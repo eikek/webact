@@ -3,6 +3,7 @@ import sbt._
 object Dependencies {
 
   val CirceVersion = "0.13.0"
+  val EmilVersion = "0.5.1"
   val FastparseVersion = "2.3.0"
   val Fs2Version = "2.3.0"
   val Http4sVersion = "0.21.4"
@@ -12,10 +13,13 @@ object Dependencies {
   val betterMonadicForVersion = "0.3.1"
   val calevVersion = "0.3.1"
   val dnsJavaVersion = "3.0.2"
-  val javaxMailVersion = "1.6.2"
   val miniTestVersion = "2.8.2"
   val pureConfigVersion = "0.12.3"
 
+  val emil = Seq(
+    "com.github.eikek" %% "emil-common" % EmilVersion,
+    "com.github.eikek" %% "emil-javamail" % EmilVersion
+  )
   val calev = Seq(
     "com.github.eikek" %% "calev-core" % calevVersion,
     "com.github.eikek" %% "calev-fs2" % calevVersion
@@ -49,12 +53,6 @@ object Dependencies {
 
   val fastparse = Seq(
     "com.lihaoyi" %% "fastparse" % FastparseVersion
-  )
-
-  val javaxMail = Seq(
-    "javax.mail" % "javax.mail-api" % javaxMailVersion,
-    "com.sun.mail" % "javax.mail" % javaxMailVersion,
-    "dnsjava" % "dnsjava" % dnsJavaVersion intransitive()
   )
 
   val yamusca = Seq(

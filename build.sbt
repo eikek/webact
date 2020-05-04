@@ -98,11 +98,11 @@ lazy val root = (project in file(".")).
       Dependencies.fs2 ++
       Dependencies.circe ++
       Dependencies.fastparse ++
-      Dependencies.javaxMail ++
       Dependencies.pureconfig ++
       Dependencies.logging ++
       Dependencies.yamusca ++
       Dependencies.calev ++
+      Dependencies.emil ++
       Dependencies.webjars,
     javaOptions in reStart := (javaOptions in run).value  ++ Seq("-Dwebact.script-dir=target/scripts", s"-Dconfig.file=${baseDirectory.value/"dev.conf"}"),
     addCompilerPlugin(Dependencies.kindProjectorPlugin),

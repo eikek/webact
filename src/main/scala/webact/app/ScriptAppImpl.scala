@@ -16,6 +16,8 @@ import java.time._
 import org.slf4j._
 import com.github.eikek.calev._
 import com.github.eikek.fs2calev._
+import emil._
+import emil.javamail._
 
 import webact.config._
 import File._
@@ -28,6 +30,8 @@ final class ScriptAppImpl[F[_]: Concurrent](
     extends ScriptApp[F] {
 
   private[this] val logger = LoggerFactory.getLogger(getClass)
+
+  private[this] val mailer: Emil[F] = JavaMailEmil[F](blocker)
 
   private val filePerms = Set(
     Perm.OWNER_READ,
@@ -99,7 +103,7 @@ final class ScriptAppImpl[F[_]: Concurrent](
     def runProcess: F[Option[Output]] =
       Sync[F].bracket(executing.update(m => m.updated(name, Instant.now)))(_ =>
         C.blockOn(blocker)(
-          Sync[F].delay(OS.execute(cfg.scriptDir.resolve(name), args, cfg))
+          OS.execute[F](cfg.scriptDir.resolve(name), args, cfg, mailer)
         )
       )(_ => executing.update(m => m - name))
 

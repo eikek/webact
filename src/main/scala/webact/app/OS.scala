@@ -7,11 +7,14 @@ import java.time._
 import org.slf4j._
 import scala.sys.process._
 import scala.util.{Failure, Success, Try}
-import cats.data.Validated
 import cats.implicits._
 import io.circe._
 import io.circe.syntax._
 import io.circe.parser._
+import emil._
+import emil.builder._
+import emil.javamail.syntax._
+import cats.effect._
 
 import webact.config._
 import File._
@@ -21,17 +24,46 @@ object OS {
 
   val pathSep = java.io.File.pathSeparator
 
-  def execute(script: Path, args: Seq[Path], cfg: Config): Option[Output] = {
+  def execute[F[_]: Sync](
+      script: Path,
+      args: Seq[Path],
+      cfg: Config,
+      mailer: Emil[F]
+  ): F[Option[Output]] = {
     val meta = readMeta(script).set(Key.Name, script.getFileName.toString)
-    if (meta.get(Key.Enabled).exists(_.equalsIgnoreCase("true"))) {
+    if (meta.get(Key.Enabled).exists(_.equalsIgnoreCase("true")))
+      for {
+        env <- prepare(script, cfg)
+        out <- runScript[F](script, args, cfg, meta, env)
+        _ <- writeRunjson(out, env.runjson)
+        _ <- runHooks(meta, out, cfg, mailer)
+      } yield Some(out)
+    else {
+      logger.info(s"Skip execution of $script, because it is not enabled.")
+      (None: Option[Output]).pure[F]
+    }
+  }
+
+  private def prepare[F[_]: Sync](script: Path, cfg: Config): F[RunEnv] =
+    Sync[F].delay {
       val tmpDir = Files.createDirectories(cfg.tmpDir.resolve(script.getFileName))
       val out = tmpDir.resolve("stdout.txt").toAbsolutePath.normalize
       Files.deleteIfExists(out)
       val err = tmpDir.resolve("stderr.txt").toAbsolutePath.normalize
       Files.deleteIfExists(err)
       val runjson = tmpDir.resolve("run.json").toAbsolutePath.normalize
-      val existingRun = readRunjson(runjson)
+      RunEnv(tmpDir, out, err, runjson)
+    }
 
+  private def runScript[F[_]: Sync](
+      script: Path,
+      args: Seq[Path],
+      cfg: Config,
+      meta: MetaHeader,
+      scriptEnv: RunEnv
+  ): F[Output] =
+    Sync[F].delay {
+      val existingRun = readRunjson(scriptEnv.runjson)
       logger.info(s"Executing $script in WD ${cfg.tmpDir}!")
       val inheritedPath = Option(System.getenv("PATH")).filter(_ => cfg.inheritPath).toSeq
       val env = cfg.env.updated(
@@ -42,11 +74,11 @@ object OS {
       val started = Instant.now
       val proc = Process(
         Seq(script.toString) ++ args.map(_.toAbsolutePath.normalize.toString),
-        Some(tmpDir.toFile),
+        Some(scriptEnv.dir.toFile),
         env.toSeq: _*
       )
-      val procLogger = new ProcLogger(out, err)
-      val output = Try(proc ! procLogger) match {
+      val procLogger = new ProcLogger(scriptEnv.stdout, scriptEnv.stderr)
+      Try(proc ! procLogger) match {
         case Success(rc) =>
           val successCodes = meta
             .get(Key.SuccessCode)
@@ -63,8 +95,8 @@ object OS {
             rcSuccess,
             1,
             if (rcSuccess) 1 else 0,
-            out,
-            err
+            scriptEnv.stdout,
+            scriptEnv.stderr
           ).updateCounter(existingRun)
           if (output.success) logger.info(s"Script $script run successful: $rc")
           else logger.error(s"Script $script returned with unsuccessful return code: $rc")
@@ -80,19 +112,11 @@ object OS {
             false,
             1,
             0,
-            out,
-            err
+            scriptEnv.stdout,
+            scriptEnv.stderr
           ).updateCounter(existingRun)
       }
-
-      writeRunjson(output, runjson)
-      Try(runHooks(meta, output, cfg))
-      Some(output)
-    } else {
-      logger.info(s"Skip execution of $script, because it is not enabled.")
-      None
     }
-  }
 
   def findOutput(name: String, cfg: Config): Option[Output] = {
     val meta = cfg.tmpDir / name / "run.json"
@@ -100,7 +124,12 @@ object OS {
     else None
   }
 
-  private def runHooks(meta: MetaHeader, output: Output, cfg: Config): Unit = {
+  private def runHooks[F[_]: Sync](
+      meta: MetaHeader,
+      output: Output,
+      cfg: Config,
+      mailer: Emil[F]
+  ): F[Unit] = {
     def read(f: Path): String =
       new String(Files.readAllBytes(f), File.defaultCharset)
 
@@ -110,10 +139,10 @@ object OS {
         meta.get(Key.NotifyMail))
         .map(_.trim)
         .filter(_.nonEmpty)
-        .map(s => MailSender.Mail(s))
+        .map(s => MailAddress.parseUnsafe(s))
     logger.debug(s"Got $recipients recipients to notify.")
 
-    if (recipients.nonEmpty) {
+    if (recipients.nonEmpty && cfg.smtp.host.nonEmpty) {
       val subject =
         meta.getHeadOr(Key.NotifySubject, s"[${cfg.appName}] Run ${name}") match {
           case s => s + (if (output.failure) ": FAILED" else "")
@@ -126,19 +155,26 @@ object OS {
             "\n\n--- stderr ---\n\n" +
             read(output.stderr)
       }
-      val msg = MailSender.Message(
-        recipients,
-        MailSender.Mail(cfg.smtp.sender),
-        subject,
-        text,
-        Some(cfg.appName)
+      val msg = MailBuilder.build(
+        Tos(recipients),
+        From(cfg.smtp.sender),
+        Subject(subject),
+        TextBody[F](text),
+        CustomHeader("List-Id", s"<${cfg.appName}>")
       )
-      MailSender.SmtpClient(cfg.smtp).send(msg) match {
-        case Validated.Invalid(err) =>
-          logger.error(s"Error sending notification mails: $err", err.head)
-        case Validated.Valid(_) =>
+      val mailCfg = cfg.smtp.toMailConfig
+      logger.info(s"Notify outcome via mail to: ${recipients} via ${mailCfg}")
+      mailer(mailCfg).send(msg).attempt.map {
+        case Left(err) =>
+          logger.error(s"Error sending notification mails", err)
+        case Right(_) =>
           logger.info(s"Sent notification mails")
       }
+    } else {
+      if (cfg.smtp.host.isEmpty) {
+        logger.warn("No SMTP settings in config file. Cannot send mail.")
+      }
+      ().pure[F]
     }
   }
 
@@ -161,12 +197,13 @@ object OS {
     else
       None
 
-  private def writeRunjson(out: Output, file: Path): Unit = {
-    val metaData = out.asJson.noSpaces
-    logger.debug(s"Write run.json '$metaData' data to $file")
-    Files.write(file, metaData.getBytes, CREATE, WRITE, TRUNCATE_EXISTING)
-    ()
-  }
+  private def writeRunjson[F[_]: Sync](out: Output, file: Path): F[Unit] =
+    Sync[F].delay {
+      val metaData = out.asJson.noSpaces
+      logger.debug(s"Write run.json '$metaData' data to $file")
+      Files.write(file, metaData.getBytes, CREATE, WRITE, TRUNCATE_EXISTING)
+      ()
+    }
 
   final class ProcLogger(outFile: Path, errFile: Path) extends ProcessLogger {
     def buffer[T](f: => T): T = f
@@ -180,4 +217,7 @@ object OS {
       //logger.debug(s)
     }
   }
+
+  case class RunEnv(dir: Path, stdout: Path, stderr: Path, runjson: Path)
+
 }
