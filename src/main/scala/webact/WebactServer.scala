@@ -13,6 +13,7 @@ import org.http4s.server.middleware.Logger
 import org.http4s.server.Router
 import webact.config.Config
 import webact.app._
+import scala.concurrent.ExecutionContext
 
 object WebactServer {
 
@@ -46,7 +47,7 @@ object WebactServer {
     Stream
       .eval(app)
       .flatMap(httpApp =>
-        BlazeServerBuilder[F]
+        BlazeServerBuilder[F](ExecutionContext.global)
           .bindHttp(cfg.bind.port, cfg.bind.host)
           .withHttpApp(httpApp)
           .serve
