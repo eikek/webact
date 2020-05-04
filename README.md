@@ -141,17 +141,20 @@ requests. Asynchronous execution is only possible via `POST` requests.
 ## Schedule
 
 Webact allows to run scripts periodically. This is enabled, if the
-script meta data contains a valid `Schedule` value. The pattern is
-borrowed from [systemd
+script meta data contains a valid `Schedule` value. The
+[calev](https://github.com/eikek/calev) library is used to parse the
+calendar events. See it's documentation for more details. Here some
+quick info: The syntax is borrowed from [systemd
 timestamps](https://www.freedesktop.org/software/systemd/man/systemd.time.html)
-but is much more limited. It consists of the following:
+but is not as powerful. It consists of the following:
 
 ```
 [dow,...] yyyy-mm-dd HH:MM
 ```
 
 The `dow` (day of week) may be one of: Mon, Tue, Wed, Thu, Fri, Sat,
-Sun. This part is optional. After a space follows the date part,
+Sun. This part is optional. It can be a range like `Mon..Fri` or a
+list like `Mon,Tue,Thu`. After a space follows the date part,
 constisting of the year as a 4-digit value, a 2-digit month and a
 2-digit day value. After another space the time part follows with hour
 and minute separated by a colon.
@@ -173,12 +176,14 @@ every hour forever:
 ```
 
 Besides concrete values and a `*`, a comma separated list of values is
-possible, too. So in this example, a script would execute at 8am and
-4pm every day for the year 2019:
+possible, a range (e.g. `8..16`) and also repetition values (e.g.
+`1/4` is `1,5,9,13,…`). So in this example, a script would execute at
+8am and 4pm every day for the year 2019:
 
 ```
 2019-*-* 8,16:00
 ```
+
 
 ## Try it out + more documentation
 
