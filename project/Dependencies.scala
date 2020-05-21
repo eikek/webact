@@ -3,13 +3,13 @@ import sbt._
 object Dependencies {
 
   val CirceVersion = "0.13.0"
-  val EmilVersion = "0.5.1"
+  val EmilVersion = "0.6.0"
   val FastparseVersion = "2.3.0"
   val Fs2Version = "2.3.0"
   val Http4sVersion = "0.21.4"
   val KindProjectorVersion = "0.10.3"
   val LogbackVersion = "1.2.3"
-  val YamuscaVersion = "0.6.1"
+  val YamuscaVersion = "0.6.2"
   val betterMonadicForVersion = "0.3.1"
   val calevVersion = "0.3.1"
   val dnsJavaVersion = "3.0.2"
@@ -60,9 +60,9 @@ object Dependencies {
   )
 
   val webjars = Seq(
-    "swagger-ui" -> "3.25.1",
+    "swagger-ui" -> "3.25.3",
     "Semantic-UI" -> "2.4.1",
-    "jquery" -> "3.5.0",
+    "jquery" -> "3.5.1",
     "highlightjs" -> "9.15.10"
   ).map({case (a, v) => "org.webjars" % a % v })
 
