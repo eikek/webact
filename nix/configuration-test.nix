@@ -5,8 +5,8 @@ in
 {
   imports = webact.modules;
 
+  console.keyMap = "neo";
   i18n = {
-    consoleKeyMap = "neo";
     defaultLocale = "en_US.UTF-8";
   };
 
@@ -51,6 +51,6 @@ in
     firewall.allowedTCPPorts = [ 8011 ];
   };
 
-  system.stateVersion = "19.09";
+  system.stateVersion = "20.03";
 
 }
