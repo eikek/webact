@@ -1,4 +1,4 @@
-cfg: { stdenv, fetchzip, jre8_headless, unzip, bash }:
+cfg: { stdenv, lib, fetchzip, jre8_headless, unzip, bash }:
 
 stdenv.mkDerivation rec {
   name = "webact-${cfg.version}";
@@ -19,7 +19,7 @@ stdenv.mkDerivation rec {
 
   meta = {
     description = "Run actions from the web. Webact allows to manage scripts on the server and execute them.";
-    license = stdenv.lib.licenses.gpl3;
+    license = lib.licenses.gpl3;
     homepage = https://github.com/eikek/webact;
   };
 }
