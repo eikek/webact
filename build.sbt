@@ -21,7 +21,7 @@ val sharedSettings = Seq(
     "-Ywarn-numeric-widen",
     "-Ywarn-value-discard"
   ),
-  scalacOptions in (Compile, console) := Seq()
+  Compile / console / scalacOptions := Seq()
 )
 
 val testSettings = Seq(
@@ -48,7 +48,7 @@ val elmSettings = Seq(
 
 val webjarSettings = Seq(
   Compile/resourceGenerators += (Def.task {
-    copyWebjarResources(Seq((sourceDirectory in Compile).value/"webjar", (Compile/resourceDirectory).value/"openapi.yml")
+    copyWebjarResources(Seq((Compile / sourceDirectory).value/"webjar", (Compile/resourceDirectory).value/"openapi.yml")
       , (Compile/resourceManaged).value
       , name.value
       , version.value
@@ -70,7 +70,7 @@ val debianSettings = Seq(
   maintainer := "Eike Kettner <eike.kettner@posteo.de>",
   packageSummary := description.value,
   packageDescription := description.value,
-  mappings in Universal += {
+  Universal / mappings += {
     val conf = (Compile / resourceDirectory).value / "reference.conf"
     if (!conf.exists) {
       sys.error(s"File $conf not found")
@@ -104,7 +104,7 @@ lazy val root = (project in file(".")).
       Dependencies.calev ++
       Dependencies.emil ++
       Dependencies.webjars,
-    javaOptions in reStart := (javaOptions in run).value  ++ Seq("-Dwebact.script-dir=target/scripts", s"-Dconfig.file=${baseDirectory.value/"dev.conf"}"),
+    reStart / javaOptions := (run / javaOptions).value  ++ Seq("-Dwebact.script-dir=target/scripts", s"-Dconfig.file=${baseDirectory.value/"dev.conf"}"),
     addCompilerPlugin(Dependencies.kindProjectorPlugin),
     addCompilerPlugin(Dependencies.betterMonadicFor),
     openapiTargetLanguage := Language.Scala,
@@ -142,10 +142,14 @@ def copyWebjarResources(src: Seq[File], base: File, artifact: String, version: S
 def compileElm(logger: Logger, wd: File, outBase: File, artifact: String, version: String, mode: ElmCompileMode): Seq[File] = {
   logger.info("Compile elm files ...")
   val target = outBase/"META-INF"/"resources"/"webjars"/artifact/version/"webact-app.js"
-  val cmd = Seq("elm", "make") ++ mode.flags ++ Seq("--output", target.toString)
-  val proc = Process(cmd ++ Seq(wd/"src"/"main"/"elm"/"Main.elm").map(_.toString), Some(wd))
-  val out = proc.!!
-  logger.info(out)
+  if (!target.exists) {
+    val cmd = Seq("elm", "make") ++ mode.flags ++ Seq("--output", target.toString)
+    val proc = Process(cmd ++ Seq(wd/"src"/"main"/"elm"/"Main.elm").map(_.toString), Some(wd))
+    val out = proc.!!
+    logger.info(out)
+  } else {
+    logger.info(s"Target $target already exists")
+  }
   Seq(target)
 }
 
@@ -163,7 +167,7 @@ def createWebjarSource(wj: Seq[ModuleID], out: File): Seq[File] = {
   Seq(target)
 }
 
-addCommandAlias("make", ";set root/elmCompileMode := ElmCompileMode.Production ;root/openapiCodegen ;root/test:compile")
-addCommandAlias("make-zip", ";root/universal:packageBin")
-addCommandAlias("make-deb", ";root/debian:packageBin")
+addCommandAlias("make", ";set root/elmCompileMode := ElmCompileMode.Production ;root/openapiCodegen ;root/Test/compile")
+addCommandAlias("make-zip", ";root/Universal/packageBin")
+addCommandAlias("make-deb", ";root/Debian/packageBin")
 addCommandAlias("make-pkg", ";clean ;make ;make-zip ;make-deb")

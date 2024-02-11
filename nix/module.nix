@@ -1,4 +1,4 @@
-{config, lib, pkgs, ...}:
+{ config, lib, pkgs, ... }:
 
 with lib;
 let
@@ -8,22 +8,22 @@ let
   webactConf =
     let
       paths = with builtins;
-        (concatMap (p: ["${p}/bin" "${p}/sbin" ]) cfg.extra-packages) ++ (cfg.extra-path);
+        (concatMap (p: [ "${p}/bin" "${p}/sbin" ]) cfg.extra-packages) ++ (cfg.extra-path);
       converted =
         cfg // { extra-path = paths; };
     in
-      pkgs.writeText "webact.conf" ''
-        {"webact":
-            ${builtins.toJSON converted}
-        }
-      '';
+    pkgs.writeText "webact.conf" ''
+      {"webact":
+          ${builtins.toJSON converted}
+      }
+    '';
   defaults = {
     app-name = "Webact";
     script-dir = "/var/lib/webact/scripts";
     tmp-dir = "/var/lib/webact/temp";
     inherit-path = true;
     extra-path = [ "/bin" "/usr/bin" "/run/current-system/sw/bin" ];
-    env = {};
+    env = { };
     monitor-scripts = true;
     heap-size = "100m";
     bind = {
@@ -40,7 +40,8 @@ let
       sender = "noreply@localhost";
     };
   };
-in {
+in
+{
 
   ## interface
   options = {
@@ -48,6 +49,11 @@ in {
       enable = mkOption {
         default = false;
         description = "Whether to enable webact.";
+      };
+      package = mkOption {
+        type = types.package;
+        default = pkgs.webact;
+        description = "The package providing the webact binary";
       };
       runAs = mkOption {
         type = types.nullOr types.str;
@@ -112,7 +118,7 @@ in {
 
       extra-packages = mkOption {
         type = types.listOf types.package;
-        default = [];
+        default = [ ];
         description = ''
           A list of packages whose bin/ and sbin/ directory are added
           to the PATH variable available in scripts.
@@ -134,7 +140,7 @@ in {
       };
 
       bind = mkOption {
-        type = types.submodule({
+        type = types.submodule ({
           options = {
             address = mkOption {
               type = types.str;
@@ -153,7 +159,7 @@ in {
       };
 
       smtp = mkOption {
-        type = types.submodule({
+        type = types.submodule ({
           options = {
             host = mkOption {
               type = types.str;
@@ -224,25 +230,25 @@ in {
         mkdir -p ${cfg.tmp-dir}
       '';
 
-      script = "${pkgs.webact}/bin/webact -J-Xmx${cfg.heap-size} ${webactConf}";
+      script = "${cfg.package}/bin/webact -J-Xmx${cfg.heap-size} ${webactConf}";
     };
 
     systemd.services.webact =
       let
-        cmd = "${pkgs.webact}/bin/webact -J-Xmx${cfg.heap-size} ${webactConf}";
+        cmd = "${cfg.package}/bin/webact -J-Xmx${cfg.heap-size} ${webactConf}";
       in
-        mkIf (!cfg.userService) {
-          description = "Webact Server";
-          after = [ "networking.target" ];
-          wantedBy = [ "multi-user.target" ];
-          path = [ pkgs.gawk ];
-          preStart = ''
-            mkdir -p ${cfg.script-dir}
-            mkdir -p ${cfg.tmp-dir}
-            chown ${user} ${cfg.script-dir} ${cfg.tmp-dir}
-          '';
-          script =
-            "${pkgs.su}/bin/su -s ${pkgs.bash}/bin/sh ${user} -c \"${cmd}\"";
-        };
+      mkIf (!cfg.userService) {
+        description = "Webact Server";
+        after = [ "networking.target" ];
+        wantedBy = [ "multi-user.target" ];
+        path = [ pkgs.gawk ];
+        preStart = ''
+          mkdir -p ${cfg.script-dir}
+          mkdir -p ${cfg.tmp-dir}
+          chown ${user} ${cfg.script-dir} ${cfg.tmp-dir}
+        '';
+        script =
+          "${pkgs.su}/bin/su -s ${pkgs.bash}/bin/sh ${user} -c \"${cmd}\"";
+      };
   };
 }

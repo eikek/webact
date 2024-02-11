@@ -1,34 +1,29 @@
-{ config, pkgs, ... }:
-let
-  webact = import ./release.nix;
-in
+{ modulesPath, config, pkgs, ... }:
 {
-  imports = webact.modules;
+  imports = [ (modulesPath + "/virtualisation/qemu-vm.nix") ];
 
-  console.keyMap = "neo";
-  i18n = {
-    defaultLocale = "en_US.UTF-8";
-  };
+  i18n = { defaultLocale = "de_DE.UTF-8"; };
+  console.keyMap = "de";
 
   users.users.root = {
     password = "root";
   };
   users.users.mm = {
-    password = "mm";
     isNormalUser = true;
+    password = "mm";
   };
-
-  nixpkgs = {
-    config = {
-      packageOverrides = pkgs:
-        let
-          callPackage = pkgs.lib.callPackageWith(custom // pkgs);
-          custom = {
-            webact = callPackage webact.currentPkg {};
-          };
-        in custom;
-    };
-  };
+  virtualisation.forwardPorts = [
+    {
+      from = "host";
+      host.port = 64022;
+      guest.port = 22;
+    }
+    {
+      from = "host";
+      host.port = 64080;
+      guest.port = 8011;
+    }
+  ];
 
   services.webact = {
     enable = true;
@@ -47,10 +42,9 @@ in
   };
 
   networking = {
-    hostName = "webacttest";
+    hostName = "webact-test";
     firewall.allowedTCPPorts = [ 8011 ];
   };
 
-  system.stateVersion = "20.03";
-
+  system.stateVersion = "23.11";
 }
