@@ -2,7 +2,7 @@
   description = "Flake for webact";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     sbt.url = "github:zaninime/sbt-derivation";
   };
 
@@ -29,12 +29,13 @@
                 "elm.json"
               ];
 
-              # hack for including elm artifacts into the
-              # dependencies; couldn't find official env/config
-              # options for the elm compiler - so using $HOME
+              # hack for including elm artifacts into the pre-build
+              # dependencies; elm stores some stuff in the users home
+              # directory. couldn't find official env/config options
+              # for the elm compiler - so using $HOME
               depsWarmupCommand = ''
-                mkdir -p $SBT_DEPS/project/.ivy/home
-                export HOME=$SBT_DEPS/project/.ivy/home
+                mkdir -p $SBT_DEPS/project/home
+                export HOME=$SBT_DEPS/project/home
                 sbt make
                 cp -r elm-stuff $HOME/
               '';
@@ -43,9 +44,9 @@
                 elmPackages.elm
               ];
 
-              depsSha256 = "sha256-wf5ItlmSqFq6bo5VMXfOKD9DckC4tJ8upbJVQ14xDWQ=";
+              depsSha256 = "sha256-ZiquCQ45ng3/jnekhxoqifTLgUYtajs9hJVVVHTRH/c=";
               buildPhase = ''
-                export HOME=$(dirname $COURSIER_CACHE)/.ivy/home
+                export HOME=$(dirname $COURSIER_CACHE)/home
                 cp -r $HOME/elm-stuff .
                 sbt make root/Universal/stage
               '';
