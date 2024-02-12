@@ -36,17 +36,17 @@
                 mkdir -p $SBT_DEPS/project/.ivy/home
                 export HOME=$SBT_DEPS/project/.ivy/home
                 sbt make
+                cp -r elm-stuff $HOME/
               '';
 
               nativeBuildInputs = with pkgs; [
-                netcat
-                which
                 elmPackages.elm
               ];
 
-              depsSha256 = "sha256-3oco6QhcujfbId0J8Mud2uj/T/STgRH/9PFxdARIXiI=";
+              depsSha256 = "sha256-wf5ItlmSqFq6bo5VMXfOKD9DckC4tJ8upbJVQ14xDWQ=";
               buildPhase = ''
-                export HOME=$SBT_DEPS/project/.ivy/home
+                export HOME=$(dirname $COURSIER_CACHE)/.ivy/home
+                cp -r $HOME/elm-stuff .
                 sbt make root/Universal/stage
               '';
 
