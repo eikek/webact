@@ -15,6 +15,7 @@
           inherit sbt;
           lib = final.pkgs.lib;
         };
+        webact-bin = prev.pkgs.callPackage (import ./nix/package-bin.nix) {};
       };
 
       nixosModules = rec {
@@ -45,7 +46,7 @@
       in
         rec {
           packages = {
-            inherit (pkgs) webact;
+            inherit (pkgs) webact webact-bin;
             default = self.packages."${system}".webact;
           };
 

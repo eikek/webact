@@ -1,4 +1,7 @@
 { pkgs, lib, sbt }:
+let
+  meta = (import ./meta.nix) lib;
+in
 sbt.lib.mkSbtDerivation {
   inherit pkgs;
   version = "dyn";
@@ -50,4 +53,6 @@ sbt.lib.mkSbtDerivation {
     EOF
     chmod 755 $out/bin/webact
   '';
+
+  meta = meta.meta-src;
 }
