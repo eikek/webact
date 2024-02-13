@@ -13,26 +13,31 @@ sbt.lib.mkSbtDerivation {
     "elm.json"
   ];
 
-  # hack for including elm artifacts into the pre-build
-  # dependencies; elm stores some stuff in the users home
-  # directory. couldn't find official env/config options
-  # for the elm compiler - so using $HOME
   depsWarmupCommand = ''
-    mkdir -p $SBT_DEPS/project/home
     export HOME=$SBT_DEPS/project/home
-    sbt make
-    cp -r elm-stuff $HOME/
+    mkdir -p $HOME
+
+    # make the webjar contents only
+    sbt "make-webapp-only"
+    cp target/scala-*/webact_*.jar $HOME/
+
+    # download all deps (sbt update didn't work)
+    echo ":quit" | sbt consoleQuick
+
+    # remove garbage
+    rm -rf $HOME/.elm
   '';
 
   nativeBuildInputs = with pkgs; [
     elmPackages.elm
   ];
 
-  depsSha256 = "sha256-ZiquCQ45ng3/jnekhxoqifTLgUYtajs9hJVVVHTRH/c=";
+  depsSha256 = "sha256-YKjsKTbq+0+eoInatFeCKvhdnUD7G5xa13I21Y2jYyc=";
   buildPhase = ''
     export HOME=$(dirname $COURSIER_CACHE)/home
-    cp -r $HOME/elm-stuff .
-    sbt make root/Universal/stage
+    mkdir lib
+    cp -r $HOME/webact_*.jar lib/webact-webjar.jar
+    sbt make-without-webapp root/Universal/stage
   '';
 
   installPhase = ''

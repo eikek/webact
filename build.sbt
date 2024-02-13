@@ -2,7 +2,9 @@ import com.github.eikek.sbt.openapi._
 import scala.sys.process._
 import com.typesafe.sbt.SbtGit.GitKeys._
 
+val skipWebappBuild = settingKey[Boolean]("Whether to skip building the webjar")
 val elmCompileMode = settingKey[ElmCompileMode]("How to compile elm sources")
+val makeWebjar = taskKey[Seq[File]]("build the webjar")
 
 val sharedSettings = Seq(
   organization := "com.github.eikek",
@@ -21,6 +23,7 @@ val sharedSettings = Seq(
     "-Ywarn-numeric-widen",
     "-Ywarn-value-discard"
   ),
+  skipWebappBuild := false,
   Compile / console / scalacOptions := Seq()
 )
 
@@ -32,7 +35,10 @@ val testSettings = Seq(
 val elmSettings = Seq(
   elmCompileMode := ElmCompileMode.Debug,
   Compile/resourceGenerators += (Def.task {
-    compileElm(streams.value.log
+    val logger = streams.value.log
+    val skip = skipWebappBuild.value
+    if (skip) Seq.empty
+    else compileElm(logger
       , (Compile/baseDirectory).value
       , (Compile/resourceManaged).value
       , name.value
@@ -48,11 +54,15 @@ val elmSettings = Seq(
 
 val webjarSettings = Seq(
   Compile/resourceGenerators += (Def.task {
-    copyWebjarResources(Seq((Compile / sourceDirectory).value/"webjar", (Compile/resourceDirectory).value/"openapi.yml")
+    val logger = streams.value.log
+    val skip = skipWebappBuild.value
+    if (skip) Seq.empty
+    else copyWebjarResources(
+      Seq((Compile / sourceDirectory).value/"webjar", (Compile/resourceDirectory).value/"openapi.yml")
       , (Compile/resourceManaged).value
       , name.value
       , version.value
-      , streams.value.log
+      , logger
     )
   }).taskValue,
   Compile/sourceGenerators += (Def.task {
@@ -63,7 +73,25 @@ val webjarSettings = Seq(
     (Compile / sourceDirectory).value/"webjar"
       , FileFilter.globFilter("*.js") || FileFilter.globFilter("*.css")
       , HiddenFileFilter
-  )
+  ),
+  makeWebjar := {
+    val logger = streams.value.log
+    val rs = copyWebjarResources(
+      Seq((Compile / sourceDirectory).value/"webjar", (Compile/resourceDirectory).value/"openapi.yml")
+      , (Compile/resourceManaged).value
+      , name.value
+      , version.value
+      , logger
+    )
+    val elm = compileElm(logger
+      , (Compile/baseDirectory).value
+      , (Compile/resourceManaged).value
+      , name.value
+      , version.value
+      , elmCompileMode.value
+    )
+    rs ++ elm
+  }
 )
 
 val debianSettings = Seq(
@@ -166,6 +194,20 @@ def createWebjarSource(wj: Seq[ModuleID], out: File): Seq[File] = {
   IO.write(target, content)
   Seq(target)
 }
+
+addCommandAlias("make-without-webapp",
+  "; set skipWebappBuild := true ;root/openapiCodegen ;root/compile"
+)
+addCommandAlias("make-webapp-only",
+  """;set skipWebappBuild := false
+     ;set root/elmCompileMode := ElmCompileMode.Production
+  ;root/openapiCodegen
+  ;makeWebjar
+  ;set Compile / sourceGenerators := Seq.empty
+  ;set Compile / sources := Seq.empty
+  ;package
+  """
+)
 
 addCommandAlias("make", ";set root/elmCompileMode := ElmCompileMode.Production ;root/openapiCodegen ;root/Test/compile")
 addCommandAlias("make-zip", ";root/Universal/packageBin")
