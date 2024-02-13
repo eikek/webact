@@ -4,7 +4,7 @@ let
 in
 sbt.lib.mkSbtDerivation {
   inherit pkgs;
-  version = "dyn";
+  inherit (meta) version;
   pname = "webact";
 
   src = lib.sourceByRegex ../. [

@@ -8,7 +8,6 @@ val makeWebjar = taskKey[Seq[File]]("build the webjar")
 
 val sharedSettings = Seq(
   organization := "com.github.eikek",
-  version := "0.6.0-SNAPSHOT",
   scalaVersion := "2.13.2",
   scalacOptions ++= Seq(
     "-deprecation",
