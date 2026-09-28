@@ -1,4 +1,4 @@
-{ lib, stdenv, fetchzip, jdk17, unzip, bash }:
+{ lib, stdenv, fetchzip, jdk, unzip, bash }:
 let
   meta = (import ./meta.nix) lib;
   version = meta.latest-release;
@@ -18,7 +18,7 @@ stdenv.mkDerivation {
     cp -R * $out/webact-${version}/
     cat > $out/bin/webact <<-EOF
     #!${bash}/bin/bash
-    $out/webact-${version}/bin/webact -java-home ${jdk17} "\$@"
+    $out/webact-${version}/bin/webact -java-home ${jdk} "\$@"
     EOF
     chmod 755 $out/bin/webact
   '';
